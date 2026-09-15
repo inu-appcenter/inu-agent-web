@@ -333,30 +333,53 @@ export function useAgentStream() {
                   );
                 } else {
                   // Fallback card for standalone web browser
+                  const domainLabel =
+                    action.auth_domain === "LMS"
+                      ? "사이버캠퍼스(LMS)"
+                      : action.auth_domain === "LIBRARY"
+                      ? "도서관"
+                      : "포털 종합정보";
+
+                  const metricLabel =
+                    action.auth_domain === "LMS"
+                      ? "실시간 과제/진도율 확인"
+                      : action.auth_domain === "LIBRARY"
+                      ? "도서 대출/연체 조회"
+                      : "학적 및 성적 조회";
+
+                  const detailText =
+                    action.auth_domain === "LMS"
+                      ? "개인정보 보호(Zero-Knowledge)를 위해 사이버캠퍼스 과제와 일정은 INTIP 앱 또는 계정 연동을 통해 실시간으로 확인됩니다."
+                      : "개인정보 보호(Zero-Knowledge)를 위해 개인 학적 및 성적 정보는 INTIP 앱 연동을 통해 확인됩니다.";
+
                   const fallbackCard: GenerativeCard = {
                     card_type: "METRIC_CARD",
-                    title: `[${action.auth_domain}] 보안 학교 연동 안내`,
+                    title: `${domainLabel} 계정 연동 안내`,
                     main_metric: {
-                      label: "모바일 앱 전용 기능",
-                      value: "INTIP 앱 지원",
+                      label: metricLabel,
+                      value: "INTIP 연동",
                     },
                     sub_details: [
                       {
-                        label: "안내",
-                        value: "성적 및 학적 조회는 개인정보 보호(Zero-Knowledge)를 위해 INTIP 모바일 앱에서 직접 연동됩니다.",
+                        label: "보안 안내",
+                        value: detailText,
                       },
                     ],
                   };
+
                   setRooms((prev) =>
                     prev.map((r) => {
                       if (r.id !== currentRoomId) return r;
                       return {
                         ...r,
-                        messages: r.messages.map((msg) =>
-                          msg.id === assistantMsgId
-                            ? { ...msg, cards: [...(msg.cards || []), fallbackCard] }
-                            : msg
-                        ),
+                        messages: r.messages.map((msg) => {
+                          if (msg.id !== assistantMsgId) return msg;
+                          const currentCards = msg.cards || [];
+                          if (currentCards.some((c) => c.title === fallbackCard.title)) {
+                            return msg;
+                          }
+                          return { ...msg, cards: [...currentCards, fallbackCard] };
+                        }),
                       };
                     })
                   );
