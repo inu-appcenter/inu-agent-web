@@ -16,47 +16,76 @@ export function useAgentStream() {
     setClientTenant(clientParam.toUpperCase());
   }, []);
 
-  // Listen for Native Mobile App (Action Runner) bridge responses
+  // Listen for Native Mobile App (Action Runner) bridge responses (CustomEvent & postMessage)
   useEffect(() => {
-    const handleNativeMessage = async (event: MessageEvent) => {
+    const handleActionResult = async (rawPayload: any) => {
       try {
-        const payload = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-        if (payload && payload.type === "AGENT_ACTION_RESULT") {
-          const actionResult: ClientActionResult = payload.result;
-          console.log("[INU-Agent-Web] Received native action result:", actionResult);
+        if (!rawPayload) return;
+        
+        let actionResult: ClientActionResult | null = null;
+        
+        if (rawPayload.type === "executeAgentActionResult" || rawPayload.type === "AGENT_ACTION_RESULT") {
+          actionResult = {
+            action_id: rawPayload.requestId || rawPayload.payload?.action_id || rawPayload.result?.action_id || "action_reported",
+            success: Boolean(rawPayload.success),
+            data: rawPayload.data !== undefined ? rawPayload.data : rawPayload.result?.data,
+            error_message: rawPayload.errorMessage || rawPayload.result?.error_message,
+            error_code: rawPayload.errorCode || rawPayload.result?.error_code,
+          };
+        }
 
-          // Report action result back to inu-agent-core to synthesize SDUI card
-          const reportResp = await fetch(`${CORE_URL}/api/v1/action/report`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(actionResult),
-          });
+        if (!actionResult) return;
+        console.log("[INU-Agent-Web] Received native action result:", actionResult);
 
-          if (reportResp.ok) {
-            const reportData = await reportResp.json();
-            if (reportData.card) {
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-                  const currentCards = updated[lastIdx].cards || [];
-                  updated[lastIdx] = {
-                    ...updated[lastIdx],
-                    cards: [...currentCards, reportData.card],
-                  };
-                }
-                return updated;
-              });
-            }
+        // Report action result back to inu-agent-core to synthesize SDUI card
+        const reportResp = await fetch(`${CORE_URL}/api/v1/action/report`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(actionResult),
+        });
+
+        if (reportResp.ok) {
+          const reportData = await reportResp.json();
+          if (reportData.card) {
+            setMessages((prev) => {
+              const updated = [...prev];
+              const lastIdx = updated.length - 1;
+              if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+                const currentCards = updated[lastIdx].cards || [];
+                updated[lastIdx] = {
+                  ...updated[lastIdx],
+                  cards: [...currentCards, reportData.card],
+                };
+              }
+              return updated;
+            });
           }
         }
       } catch (err) {
-        console.warn("[INU-Agent-Web] Error parsing native message:", err);
+        console.warn("[INU-Agent-Web] Error handling native action result:", err);
       }
     };
 
-    window.addEventListener("message", handleNativeMessage);
-    return () => window.removeEventListener("message", handleNativeMessage);
+    const handleCustomEvent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent?.detail) {
+        handleActionResult(customEvent.detail);
+      }
+    };
+
+    const handleMessageEvent = (event: MessageEvent) => {
+      try {
+        const payload = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        handleActionResult(payload);
+      } catch {}
+    };
+
+    window.addEventListener("intipAgentResult", handleCustomEvent);
+    window.addEventListener("message", handleMessageEvent);
+    return () => {
+      window.removeEventListener("intipAgentResult", handleCustomEvent);
+      window.removeEventListener("message", handleMessageEvent);
+    };
   }, []);
 
   const sendMessage = useCallback(
@@ -153,8 +182,9 @@ export function useAgentStream() {
                 if ((window as any).ReactNativeWebView) {
                   (window as any).ReactNativeWebView.postMessage(
                     JSON.stringify({
-                      type: "AGENT_CLIENT_ACTION",
-                      instruction: action,
+                      type: "executeAgentAction",
+                      payload: { instruction: action },
+                      requestId: action.action_id,
                     })
                   );
                 } else {
