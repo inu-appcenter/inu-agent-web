@@ -114,13 +114,25 @@ export function useAgentStream() {
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
+      const authToken =
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("token") ||
+        sessionStorage.getItem("accessToken") ||
+        new URLSearchParams(window.location.search).get("token") ||
+        "";
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "X-AppCenter-Client": clientTenant,
+      };
+      if (authToken) {
+        headers["Authorization"] = authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`;
+      }
+
       try {
         const response = await fetch(`${CORE_URL}/api/v1/chat/stream`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-AppCenter-Client": clientTenant,
-          },
+          headers,
           body: JSON.stringify({
             message: text,
             client: clientTenant,
