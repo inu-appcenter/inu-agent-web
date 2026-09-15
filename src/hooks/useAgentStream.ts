@@ -1,11 +1,40 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { ChatMessage, GenerativeCard, ClientActionInstruction, ClientActionResult } from "../types/agent";
+import {
+  ChatMessage,
+  ChatRoom,
+  GenerativeCard,
+  ClientActionInstruction,
+  ClientActionResult,
+} from "../types/agent";
 
 const CORE_URL = import.meta.env.VITE_AGENT_CORE_URL || "http://localhost:8000";
+const STORAGE_KEY = "intip_agent_rooms_v1";
+
+const generateUUID = (): string => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "room-" + Date.now() + "-" + Math.random().toString(36).substring(2, 9);
+};
 
 export function useAgentStream() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [rooms, setRooms] = useState<ChatRoom[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("로컬 대화방 로드 실패:", e);
+    }
+    const initialId = generateUUID();
+    return [{ id: initialId, title: "새로운 대화", createdAt: Date.now(), messages: [] }];
+  });
+
+  const [currentRoomId, setCurrentRoomId] = useState<string>(() => rooms[0]?.id || generateUUID());
   const [isLoading, setIsLoading] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
   const [clientTenant, setClientTenant] = useState<string>("INTIP");
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -15,6 +44,78 @@ export function useAgentStream() {
     const clientParam = params.get("client") || import.meta.env.VITE_DEFAULT_CLIENT || "INTIP";
     setClientTenant(clientParam.toUpperCase());
   }, []);
+
+  // Save rooms to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rooms));
+    } catch (e) {
+      console.warn("로컬 대화방 저장 실패:", e);
+    }
+  }, [rooms]);
+
+  const currentRoom = rooms.find((r) => r.id === currentRoomId) || rooms[0];
+
+  const createNewRoom = useCallback(() => {
+    const newId = generateUUID();
+    const newRoom: ChatRoom = {
+      id: newId,
+      title: "새로운 대화",
+      createdAt: Date.now(),
+      messages: [],
+    };
+    setRooms((prev) => [newRoom, ...prev]);
+    setCurrentRoomId(newId);
+    if (window.innerWidth <= 768) setIsSidebarOpen(false);
+  }, []);
+
+  const deleteRoom = useCallback((id: string) => {
+    setRooms((prev) => {
+      const filtered = prev.filter((r) => r.id !== id);
+      if (filtered.length === 0) {
+        const freshId = generateUUID();
+        return [{ id: freshId, title: "새로운 대화", createdAt: Date.now(), messages: [] }];
+      }
+      return filtered;
+    });
+    setCurrentRoomId((prevId) => {
+      if (prevId === id) {
+        const remaining = rooms.filter((r) => r.id !== id);
+        return remaining[0]?.id || generateUUID();
+      }
+      return prevId;
+    });
+  }, [rooms]);
+
+  const updateRoomTitle = useCallback((id: string, title: string) => {
+    setRooms((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, title } : r))
+    );
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    const freshId = generateUUID();
+    setRooms([{ id: freshId, title: "새로운 대화", createdAt: Date.now(), messages: [] }]);
+    setCurrentRoomId(freshId);
+  }, []);
+
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsLoading(false);
+    setRooms((prev) =>
+      prev.map((r) =>
+        r.id === currentRoomId
+          ? {
+              ...r,
+              messages: r.messages.map((m) => ({ ...m, isStreaming: false })),
+            }
+          : r
+      )
+    );
+  }, [currentRoomId]);
 
   // Listen for Native Mobile App (Action Runner) bridge responses (CustomEvent & postMessage)
   useEffect(() => {
@@ -47,18 +148,21 @@ export function useAgentStream() {
         if (reportResp.ok) {
           const reportData = await reportResp.json();
           if (reportData.card) {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const lastIdx = updated.length - 1;
-              if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-                const currentCards = updated[lastIdx].cards || [];
-                updated[lastIdx] = {
-                  ...updated[lastIdx],
-                  cards: [...currentCards, reportData.card],
-                };
-              }
-              return updated;
-            });
+            setRooms((prev) =>
+              prev.map((r) => {
+                if (r.id !== currentRoomId) return r;
+                const updatedMsgs = [...r.messages];
+                const lastIdx = updatedMsgs.length - 1;
+                if (lastIdx >= 0 && updatedMsgs[lastIdx].role === "assistant") {
+                  const currentCards = updatedMsgs[lastIdx].cards || [];
+                  updatedMsgs[lastIdx] = {
+                    ...updatedMsgs[lastIdx],
+                    cards: [...currentCards, reportData.card],
+                  };
+                }
+                return { ...r, messages: updatedMsgs };
+              })
+            );
           }
         }
       } catch (err) {
@@ -86,7 +190,7 @@ export function useAgentStream() {
       window.removeEventListener("intipAgentResult", handleCustomEvent);
       window.removeEventListener("message", handleMessageEvent);
     };
-  }, []);
+  }, [currentRoomId]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -108,7 +212,23 @@ export function useAgentStream() {
         timestamp: new Date().toISOString(),
       };
 
-      setMessages((prev) => [...prev, userMsg, assistantMsg]);
+      // Set initial room title if this is the first message
+      const isFirstMessage = currentRoom.messages.length === 0;
+      const initialTitle = isFirstMessage
+        ? text.slice(0, 18) + (text.length > 18 ? "..." : "")
+        : currentRoom.title;
+
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.id === currentRoomId
+            ? {
+                ...r,
+                title: initialTitle,
+                messages: [...r.messages, userMsg, assistantMsg],
+              }
+            : r
+        )
+      );
       setIsLoading(true);
 
       const controller = new AbortController();
@@ -136,7 +256,7 @@ export function useAgentStream() {
           body: JSON.stringify({
             message: text,
             client: clientTenant,
-            history: messages.slice(-6).map((m) => ({
+            history: currentRoom.messages.slice(-6).map((m) => ({
               role: m.role,
               content: m.content,
             })),
@@ -171,20 +291,32 @@ export function useAgentStream() {
               const event = JSON.parse(jsonStr);
 
               if (event.event_type === "TOKEN" && event.content) {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMsgId
-                      ? { ...msg, content: msg.content + event.content }
-                      : msg
-                  )
+                setRooms((prev) =>
+                  prev.map((r) => {
+                    if (r.id !== currentRoomId) return r;
+                    return {
+                      ...r,
+                      messages: r.messages.map((msg) =>
+                        msg.id === assistantMsgId
+                          ? { ...msg, content: msg.content + event.content }
+                          : msg
+                      ),
+                    };
+                  })
                 );
               } else if (event.event_type === "CARD" && event.card) {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMsgId
-                      ? { ...msg, cards: [...(msg.cards || []), event.card] }
-                      : msg
-                  )
+                setRooms((prev) =>
+                  prev.map((r) => {
+                    if (r.id !== currentRoomId) return r;
+                    return {
+                      ...r,
+                      messages: r.messages.map((msg) =>
+                        msg.id === assistantMsgId
+                          ? { ...msg, cards: [...(msg.cards || []), event.card] }
+                          : msg
+                      ),
+                    };
+                  })
                 );
               } else if (event.event_type === "ACTION_REQUIRED" && event.action) {
                 const action: ClientActionInstruction = event.action;
@@ -215,19 +347,31 @@ export function useAgentStream() {
                       },
                     ],
                   };
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === assistantMsgId
-                        ? { ...msg, cards: [...(msg.cards || []), fallbackCard] }
-                        : msg
-                    )
+                  setRooms((prev) =>
+                    prev.map((r) => {
+                      if (r.id !== currentRoomId) return r;
+                      return {
+                        ...r,
+                        messages: r.messages.map((msg) =>
+                          msg.id === assistantMsgId
+                            ? { ...msg, cards: [...(msg.cards || []), fallbackCard] }
+                            : msg
+                        ),
+                      };
+                    })
                   );
                 }
               } else if (event.event_type === "DONE") {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMsgId ? { ...msg, isStreaming: false } : msg
-                  )
+                setRooms((prev) =>
+                  prev.map((r) => {
+                    if (r.id !== currentRoomId) return r;
+                    return {
+                      ...r,
+                      messages: r.messages.map((msg) =>
+                        msg.id === assistantMsgId ? { ...msg, isStreaming: false } : msg
+                      ),
+                    };
+                  })
                 );
               }
             } catch (err) {
@@ -238,16 +382,24 @@ export function useAgentStream() {
       } catch (err: any) {
         if (err.name !== "AbortError") {
           console.error("Stream error:", err);
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantMsgId
-                ? {
-                    ...msg,
-                    content: msg.content || "오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
-                    isStreaming: false,
-                  }
-                : msg
-            )
+          setRooms((prev) =>
+            prev.map((r) => {
+              if (r.id !== currentRoomId) return r;
+              return {
+                ...r,
+                messages: r.messages.map((msg) =>
+                  msg.id === assistantMsgId
+                    ? {
+                        ...msg,
+                        content:
+                          msg.content ||
+                          "죄송합니다. 응답을 처리하는 중 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+                        isStreaming: false,
+                      }
+                    : msg
+                ),
+              };
+            })
           );
         }
       } finally {
@@ -255,22 +407,24 @@ export function useAgentStream() {
         abortControllerRef.current = null;
       }
     },
-    [isLoading, messages, clientTenant]
+    [isLoading, currentRoom, currentRoomId, clientTenant]
   );
 
-  const resetChat = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    setMessages([]);
-    setIsLoading(false);
-  }, []);
 
   return {
-    messages,
+    rooms,
+    currentRoom,
+    currentRoomId,
+    setCurrentRoomId,
     isLoading,
-    clientTenant,
+    isSidebarOpen,
+    setIsSidebarOpen,
+    createNewRoom,
+    deleteRoom,
+    updateRoomTitle,
+    clearHistory,
+    stopGeneration,
     sendMessage,
-    resetChat,
+    clientTenant,
   };
 }

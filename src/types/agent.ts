@@ -91,5 +91,13 @@ export interface ChatMessage {
   cards?: GenerativeCard[];
   actionInstruction?: ClientActionInstruction;
   isStreaming?: boolean;
+  suggestedActions?: string[];
   timestamp: string;
+}
+
+export interface ChatRoom {
+  id: string;
+  title: string;
+  createdAt: number;
+  messages: ChatMessage[];
 }
