@@ -16,13 +16,13 @@ export const Header: React.FC<Props> = ({ clientTenant, onReset }) => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-sm md:text-base font-bold text-slate-800 tracking-tight">
-              INU Agent
+              챗불이 (Chatbuli)
             </h1>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
               {clientTenant}
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 font-medium">인천대학교 AI 캠퍼스 비서</p>
+          <p className="text-[11px] text-slate-400 font-medium">인천대학교 공식 AI 캠퍼스 비서</p>
         </div>
       </div>
 

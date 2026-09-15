@@ -33,10 +33,10 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
     <div className="w-full max-w-2xl mx-auto py-8 px-4 text-center">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
-          무엇을 도와드릴까요?
+          안녕하세요! 저는 챗불이예요 🎓
         </h2>
         <p className="text-xs md:text-sm text-slate-500 mt-1">
-          인천대 학생 생활과 학사에 관한 모든 질문을 자유롭게 물어보세요.
+          인천대 학생 생활, 학사 규정, 학식, 버스, 과제 등 무엇이든 물어보세요!
         </p>
       </div>
 
