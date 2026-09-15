@@ -2,6 +2,8 @@ import React from "react";
 import { ListCardData } from "../../types/agent";
 import { ListTodo, ChevronRight } from "lucide-react";
 
+import { handleAppNavigation } from "../../utils/navigation";
+
 interface Props {
   data: ListCardData;
 }
@@ -15,31 +17,43 @@ export const ListCard: React.FC<Props> = ({ data }) => {
       </div>
 
       <div className="divide-y divide-slate-50 py-1">
-        {data.items.map((item, idx) => (
-          <div
-            key={idx}
-            className="py-2.5 px-2 flex items-center justify-between hover:bg-slate-50 rounded-xl transition-colors"
-          >
-            <div className="pr-3">
-              <div className="text-xs md:text-sm font-medium text-slate-800 line-clamp-1">
-                {item.title}
-              </div>
-              {item.subtitle && (
-                <div className="text-[11px] text-slate-400 mt-0.5">
-                  {item.subtitle}
+        {data.items.map((item, idx) => {
+          const isClickable = Boolean(item.link);
+          return (
+            <div
+              key={idx}
+              onClick={() => isClickable && handleAppNavigation(item.link)}
+              className={`py-2.5 px-2 flex items-center justify-between rounded-xl transition-colors ${
+                isClickable
+                  ? "hover:bg-blue-50/60 cursor-pointer"
+                  : "hover:bg-slate-50"
+              }`}
+            >
+              <div className="pr-3">
+                <div
+                  className={`text-xs md:text-sm font-medium line-clamp-1 ${
+                    isClickable ? "text-blue-950 hover:text-blue-600" : "text-slate-800"
+                  }`}
+                >
+                  {item.title}
                 </div>
-              )}
+                {item.subtitle && (
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    {item.subtitle}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {item.tag && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                    {item.tag}
+                  </span>
+                )}
+                {item.link && <ChevronRight className="w-3.5 h-3.5 text-blue-400" />}
+              </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {item.tag && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                  {item.tag}
-                </span>
-              )}
-              {item.link && <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {data.footer_text && (
