@@ -335,7 +335,7 @@ export function useAgentStream() {
                   // Fallback card for standalone web browser
                   const domainLabel =
                     action.auth_domain === "LMS"
-                      ? "사이버캠퍼스(LMS)"
+                      ? "이러닝(LMS)"
                       : action.auth_domain === "LIBRARY"
                       ? "도서관"
                       : "포털 종합정보";
@@ -349,7 +349,7 @@ export function useAgentStream() {
 
                   const detailText =
                     action.auth_domain === "LMS"
-                      ? "개인정보 보호(Zero-Knowledge)를 위해 사이버캠퍼스 과제와 일정은 INTIP 앱 또는 계정 연동을 통해 실시간으로 확인됩니다."
+                      ? "개인정보 보호(Zero-Knowledge)를 위해 이러닝 과제와 강의 진도는 INTIP 앱 또는 계정 연동을 통해 실시간으로 확인됩니다."
                       : "개인정보 보호(Zero-Knowledge)를 위해 개인 학적 및 성적 정보는 INTIP 앱 연동을 통해 확인됩니다.";
 
                   const fallbackCard: GenerativeCard = {
