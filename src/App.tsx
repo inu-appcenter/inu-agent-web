@@ -144,10 +144,12 @@ export default function App() {
         <div
           ref={chatAreaRef}
           style={{ paddingBottom: "calc(110px + env(safe-area-inset-bottom, 0px))" }}
-          className="flex-1 overflow-y-auto px-4 md:px-8 pt-2 md:pt-4 flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar"
+          className={`flex-1 px-4 md:px-8 pt-2 md:pt-3 flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar ${
+            currentRoom.messages.length === 0 ? "overflow-hidden h-full" : "overflow-y-auto"
+          }`}
         >
           {currentRoom.messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center w-full max-w-3xl py-1 md:py-3">
+            <div className="flex-1 w-full max-w-3xl flex flex-col items-center h-full overflow-hidden">
               <QuickPrompts onSelect={(prompt) => sendMessage(prompt)} />
             </div>
           ) : (

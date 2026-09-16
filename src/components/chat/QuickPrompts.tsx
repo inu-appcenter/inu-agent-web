@@ -341,39 +341,40 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
 
   const currentDomain = domains.find((d) => d.id === selectedDomainId);
 
-  // 1. 도메인 상세 작업 예시 목록 화면 (상단 헤더에 딱 붙는 레이아웃)
+  // 1. 도메인 상세 작업 예시 목록 화면 (상단 헤더 고정 + 내부만 독립 스크롤 레이아웃)
   if (currentDomain) {
     return (
-      <div className="w-full max-w-2xl mx-auto pt-0 pb-6 px-1 text-left animate-in fade-in duration-200">
-        {/* 상단 네비게이션 헤더: < 뒤로가기 버튼 + 도메인 타이틀 */}
-        <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-slate-200/60">
-          <button
-            onClick={() => setSelectedDomainId(null)}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-slate-700 hover:text-blue-600 hover:bg-white bg-slate-100/90 border border-slate-200/80 transition-all shadow-2xs hover:shadow-xs cursor-pointer shrink-0"
-            aria-label="뒤로가기"
-            title="뒤로가기"
-          >
-            <ChevronLeft className="w-4 h-4 -translate-x-0.5" />
-          </button>
+      <div className="w-full max-w-2xl mx-auto h-full flex flex-col overflow-hidden text-left animate-in fade-in duration-200">
+        {/* 상단 고정 헤더: 스크롤해도 전혀 끌려내려오지 않고 상단에 딱 붙어있음 */}
+        <div className="flex-shrink-0 pt-1 pb-3 border-b border-slate-200/80 bg-[#f7f8ff]/80 backdrop-blur-xs z-10">
+          <div className="flex items-center gap-2.5 mb-2">
+            <button
+              onClick={() => setSelectedDomainId(null)}
+              className="w-8 h-8 flex items-center justify-center rounded-full text-slate-700 hover:text-blue-600 hover:bg-white bg-slate-100/90 border border-slate-200/80 transition-all shadow-2xs hover:shadow-xs cursor-pointer shrink-0"
+              aria-label="뒤로가기"
+              title="뒤로가기"
+            >
+              <ChevronLeft className="w-4 h-4 -translate-x-0.5" />
+            </button>
 
-          <div className="flex items-center gap-2 min-w-0">
-            <div className={`p-1.5 rounded-lg ${currentDomain.colorClass.bg} border ${currentDomain.colorClass.border} shrink-0`}>
-              {currentDomain.icon}
+            <div className="flex items-center gap-2 min-w-0">
+              <div className={`p-1.5 rounded-lg ${currentDomain.colorClass.bg} border ${currentDomain.colorClass.border} shrink-0`}>
+                {currentDomain.icon}
+              </div>
+              <h3 className="text-base font-bold text-slate-800 tracking-tight truncate">
+                {currentDomain.title}
+              </h3>
             </div>
-            <h3 className="text-base font-bold text-slate-800 tracking-tight truncate">
-              {currentDomain.title}
-            </h3>
           </div>
+
+          <p className="text-xs text-slate-500 px-0.5 leading-relaxed">
+            {currentDomain.description}
+          </p>
         </div>
 
-        {/* 도메인 설명 */}
-        <p className="text-xs text-slate-500 mb-4 px-0.5 leading-relaxed">
-          {currentDomain.description}
-        </p>
-
-        {/* 세부 작업 예시 카드 그리드 */}
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between px-1">
+        {/* 내부 스크롤 영역: 작업 예시 카드들만 독립적으로 스크롤 */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar pt-3 pb-8 pr-1 space-y-2.5">
+          <div className="flex items-center justify-between px-1 mb-1">
             <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
               수행 가능한 작업 예시
@@ -407,12 +408,12 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
               </button>
             ))}
           </div>
-        </div>
 
-        <div className="mt-4 pt-3 text-center border-t border-slate-100">
-          <p className="text-[11px] text-slate-400">
-            💡 위 예시 외에도 해당 도메인과 관련된 구체적인 내용을 아래 입력창에 직접 질문하셔도 됩니다.
-          </p>
+          <div className="mt-4 pt-3 text-center border-t border-slate-100">
+            <p className="text-[11px] text-slate-400">
+              💡 위 예시 외에도 해당 도메인과 관련된 구체적인 내용을 아래 입력창에 직접 질문하셔도 됩니다.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -420,9 +421,9 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
 
   // 2. 초기 메인 도메인 카드 그리드 화면
   return (
-    <div className="w-full max-w-2xl mx-auto my-auto py-2 md:py-4 px-2 text-center animate-in fade-in duration-200">
+    <div className="w-full max-w-2xl mx-auto h-full flex flex-col justify-center overflow-y-auto custom-scrollbar py-2 md:py-4 px-2 text-center animate-in fade-in duration-200">
       {/* 챗불이 환영 인사 */}
-      <div className="mb-6">
+      <div className="mb-6 shrink-0">
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center justify-center gap-2">
           <span>안녕하세요! 저는 챗불이 에이전트예요</span>
         </h2>
