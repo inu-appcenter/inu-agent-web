@@ -356,7 +356,38 @@ export function useAgentStream() {
                         } else {
                           updatedTools = [...currentTools, statusItem];
                         }
-                        return { ...msg, toolStatuses: updatedTools };
+
+                        // 통합 타임라인 갱신 (시간 순서대로 유지하면서 동일 도구는 인라인 상태 전환)
+                        const currentTimeline = msg.timeline || [];
+                        const timelineIdx = currentTimeline.findIndex((item) => item.id === statusItem.id);
+                        let updatedTimeline;
+                        if (timelineIdx >= 0) {
+                          updatedTimeline = [...currentTimeline];
+                          updatedTimeline[timelineIdx] = {
+                            ...updatedTimeline[timelineIdx],
+                            text: statusItem.title,
+                            category: statusItem.category,
+                            state: statusItem.state,
+                          };
+                        } else {
+                          updatedTimeline = [
+                            ...currentTimeline,
+                            {
+                              id: statusItem.id,
+                              type: "tool" as const,
+                              text: statusItem.title,
+                              category: statusItem.category,
+                              state: statusItem.state,
+                              timestamp: Date.now(),
+                            },
+                          ];
+                        }
+
+                        return {
+                          ...msg,
+                          toolStatuses: updatedTools,
+                          timeline: updatedTimeline,
+                        };
                       }),
                     };
                   })
@@ -373,7 +404,30 @@ export function useAgentStream() {
                         const newThinking = prevThinking
                           ? `${prevThinking}\n${event.thinking}`
                           : event.thinking;
-                        return { ...msg, thinking: newThinking };
+
+                        // 통합 타임라인에 생각 항목 추가 (이전 항목과 중복 방지)
+                        const currentTimeline = msg.timeline || [];
+                        const isDuplicate = currentTimeline.some(
+                          (item) => item.type === "thinking" && item.text === event.thinking
+                        );
+                        let updatedTimeline = currentTimeline;
+                        if (!isDuplicate) {
+                          updatedTimeline = [
+                            ...currentTimeline,
+                            {
+                              id: `think_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                              type: "thinking" as const,
+                              text: event.thinking,
+                              timestamp: Date.now(),
+                            },
+                          ];
+                        }
+
+                        return {
+                          ...msg,
+                          thinking: newThinking,
+                          timeline: updatedTimeline,
+                        };
                       }),
                     };
                   })

@@ -100,6 +100,15 @@ export interface AgentToolStatus {
   state: "running" | "completed";
 }
 
+export interface TimelineItem {
+  id: string;
+  type: "thinking" | "tool";
+  text: string;
+  category?: string;
+  state?: "running" | "completed";
+  timestamp: number;
+}
+
 export interface ChatMessage {
   id: string;
   role: Role;
@@ -111,6 +120,7 @@ export interface ChatMessage {
   timestamp: string;
   thinking?: string;
   toolStatuses?: AgentToolStatus[];
+  timeline?: TimelineItem[];
 }
 
 export interface ChatRoom {

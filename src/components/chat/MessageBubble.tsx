@@ -248,7 +248,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const hasTimeline =
     !isUser &&
-    ((message.toolStatuses && message.toolStatuses.length > 0) ||
+    ((message.timeline && message.timeline.length > 0) ||
+      (message.toolStatuses && message.toolStatuses.length > 0) ||
       message.thinking ||
       (message.isStreaming && !cleanContent));
 
@@ -282,14 +283,50 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   />
                 )}
 
-                <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                  {/* 연동 중/완료된 도구 타임라인 목록 */}
-                  {message.toolStatuses && message.toolStatuses.length > 0 && (
-                    <div className="flex flex-col gap-1">
-                      {message.toolStatuses.map((tool) => (
+                <div className="flex-1 flex flex-col gap-1 min-w-0">
+                  {/* 시간 순서대로 렌더링되는 통합 타임라인 (생각 -> 도구 -> 완료 -> 생각) */}
+                  {message.timeline && message.timeline.length > 0 ? (
+                    message.timeline.map((item) => {
+                      if (item.type === "thinking") {
+                        return (
+                          <div
+                            key={item.id}
+                            className="text-[12.5px] leading-relaxed text-slate-500 font-normal whitespace-pre-line break-words animate-fade-in py-0.5"
+                          >
+                            {item.text}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-2 text-xs text-slate-700 animate-fade-in py-0.5"
+                        >
+                          <div className="w-5 h-5 rounded-md bg-white border border-slate-200/90 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                            {getToolIcon(item.category || "SYSTEM")}
+                          </div>
+                          <span className="font-medium tracking-tight truncate">
+                            {item.text}
+                          </span>
+                          {item.state === "running" ? (
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
+                          ) : (
+                            <Check
+                              size={12}
+                              className="text-emerald-600 stroke-[2.5] flex-shrink-0"
+                            />
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <>
+                      {/* Fallback for legacy messages without timeline */}
+                      {message.toolStatuses?.map((tool) => (
                         <div
                           key={tool.id}
-                          className="flex items-center gap-2 text-xs text-slate-700 animate-fade-in"
+                          className="flex items-center gap-2 text-xs text-slate-700 animate-fade-in py-0.5"
                         >
                           <div className="w-5 h-5 rounded-md bg-white border border-slate-200/90 flex items-center justify-center flex-shrink-0 shadow-2xs">
                             {getToolIcon(tool.category)}
@@ -307,14 +344,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                           )}
                         </div>
                       ))}
-                    </div>
-                  )}
-
-                  {/* AI 생각/판단 스트리밍 (Thinking process: 살짝 회색 계열의 작은 글씨 문단) */}
-                  {message.thinking && (
-                    <div className="text-[12px] leading-relaxed text-slate-400 font-normal whitespace-pre-line break-words animate-fade-in border-t border-slate-100/80 pt-1.5 mt-0.5">
-                      {message.thinking}
-                    </div>
+                      {message.thinking && (
+                        <div className="text-[12.5px] leading-relaxed text-slate-500 font-normal whitespace-pre-line break-words animate-fade-in py-0.5">
+                          {message.thinking}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
