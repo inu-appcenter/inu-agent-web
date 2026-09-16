@@ -160,6 +160,36 @@ const preprocessMarkdown = (rawText: string): string => {
 };
 
 /**
+ * 링크 텍스트가 URL 날것인 경우 "바로가기"로 대체하는 헬퍼 함수 (UNIDORM 규격)
+ */
+const renderLinkText = (children: React.ReactNode, href?: string): React.ReactNode => {
+  if (typeof children === "string") {
+    const trimmed = children.trim();
+    if (
+      trimmed.startsWith("http://") ||
+      trimmed.startsWith("https://") ||
+      trimmed === href
+    ) {
+      return "바로가기";
+    }
+  }
+  if (Array.isArray(children) && children.length === 1) {
+    const firstChild = children[0];
+    if (typeof firstChild === "string") {
+      const trimmed = firstChild.trim();
+      if (
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://") ||
+        trimmed === href
+      ) {
+        return "바로가기";
+      }
+    }
+  }
+  return children;
+};
+
+/**
  * 텍스트 노드를 단어 단위로 쪼개어 UNIDORM 페이드인 효과(fade-in-word class)를 적용하는 헬퍼 함수
  */
 const wrapTextWithSpans = (children: React.ReactNode): React.ReactNode => {
@@ -186,6 +216,7 @@ const wrapTextWithSpans = (children: React.ReactNode): React.ReactNode => {
 
   return children;
 };
+
 
 /**
  * 도구 카테고리에 맞는 담백한 아이콘 반환 (Gemini 연동 스타일)
@@ -355,37 +386,131 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               </div>
             )}
 
-            {/* 2. UNIDORM 마크다운 엔진 & 단어별 페이드인 답변 렌더링 */}
+            {/* 2. UNIDORM 마크다운 엔진 & 깜빡임 없는 스트리밍 / 정밀 표 디자인 렌더링 */}
             {cleanContent && (
-              <div className="prose prose-slate max-w-none prose-p:my-1.5 prose-p:leading-relaxed prose-headings:my-2.5 prose-headings:font-bold prose-h1:text-xl prose-h2:text-lg prose-h3:text-base prose-h4:text-sm prose-ul:my-1.5 prose-li:my-0.5 prose-table:my-2 prose-table:border-collapse prose-th:bg-slate-100 prose-th:px-3 prose-th:py-1.5 prose-td:px-3 prose-td:py-1.5 prose-blockquote:border-l-4 prose-blockquote:border-blue-400 prose-blockquote:bg-blue-50/50 prose-blockquote:py-1 prose-blockquote:px-3 prose-blockquote:rounded-r-lg">
+              <div className="chat-markdown w-full">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm, remarkBreaks]}
                   components={{
-                    p: ({ children }) => <p>{wrapTextWithSpans(children)}</p>,
-                    li: ({ children }) => <li>{wrapTextWithSpans(children)}</li>,
-                    strong: ({ children }) => <strong>{wrapTextWithSpans(children)}</strong>,
-                    em: ({ children }) => <em>{wrapTextWithSpans(children)}</em>,
-                    h1: ({ children }) => <h1>{wrapTextWithSpans(children)}</h1>,
-                    h2: ({ children }) => <h2>{wrapTextWithSpans(children)}</h2>,
-                    h3: ({ children }) => <h3>{wrapTextWithSpans(children)}</h3>,
-                    h4: ({ children }) => <h4>{wrapTextWithSpans(children)}</h4>,
-                    blockquote: ({ children }) => <blockquote>{wrapTextWithSpans(children)}</blockquote>,
+                    p: ({ children }) => (
+                      <p className="my-1.5 leading-relaxed text-[15px] text-slate-800">
+                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                      </p>
+                    ),
+                    li: ({ children }) => (
+                      <li className="leading-relaxed text-[14.5px] text-slate-800 mb-1">
+                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                      </li>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-bold text-slate-900">
+                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                      </strong>
+                    ),
+                    em: ({ children }) => (
+                      <em className="italic">
+                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                      </em>
+                    ),
+                    h1: ({ children }) => (
+                      <h1 className="text-[1.25em] font-bold text-slate-900 mt-4 mb-2 first:mt-0 leading-snug">
+                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                      </h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-[1.15em] font-bold text-slate-800 mt-3.5 mb-1.5 first:mt-0 leading-snug">
+                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                      </h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-[1.05em] font-semibold text-slate-800 mt-3 mb-1.5 first:mt-0 leading-snug">
+                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                      </h3>
+                    ),
+                    h4: ({ children }) => (
+                      <h4 className="text-sm font-semibold text-slate-700 mt-2.5 mb-1">
+                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                      </h4>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote className="my-2.5 pl-3.5 py-2 border-l-[3.5px] border-[#0061ff] bg-blue-50/40 rounded-r-lg text-slate-700 text-[14px]">
+                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                      </blockquote>
+                    ),
                     table: ({ children, ...props }) => (
-                      <div className="overflow-x-auto my-2">
-                        <table {...props}>{children}</table>
+                      <div className="overflow-x-auto my-3 rounded-xl border border-slate-200 bg-white shadow-2xs">
+                        <table {...props} className="w-full border-collapse text-[13.5px] text-left">
+                          {children}
+                        </table>
                       </div>
                     ),
-                    a: ({ node, children, href, ...props }) => {
+                    thead: ({ children, ...props }) => (
+                      <thead {...props} className="border-b border-slate-200">
+                        {children}
+                      </thead>
+                    ),
+                    th: ({ children, ...props }) => (
+                      <th
+                        {...props}
+                        className="bg-blue-50/80 text-slate-800 font-semibold px-3.5 py-2.5 border-r border-slate-200 last:border-r-0 text-xs sm:text-[13.5px]"
+                      >
+                        {children}
+                      </th>
+                    ),
+                    td: ({ children, ...props }) => (
+                      <td
+                        {...props}
+                        className="px-3.5 py-2.5 border-t border-r border-slate-200 last:border-r-0 text-slate-700 text-xs sm:text-[13px]"
+                      >
+                        {children}
+                      </td>
+                    ),
+                    tr: ({ children, ...props }) => (
+                      <tr
+                        {...props}
+                        className="even:bg-slate-50/40 hover:bg-blue-50/20 transition-colors"
+                      >
+                        {children}
+                      </tr>
+                    ),
+                    pre: ({ children, ...props }) => (
+                      <pre
+                        {...props}
+                        className="my-3 p-3.5 rounded-xl bg-slate-900 text-slate-100 text-[13px] font-mono overflow-x-auto shadow-xs"
+                      >
+                        {children}
+                      </pre>
+                    ),
+                    code: ({ inline, className, children, ...props }: any) => {
+                      const isInline = !className && !String(children).includes("\n");
+                      if (isInline) {
+                        return (
+                          <code
+                            {...props}
+                            className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded text-[13px] font-mono border border-slate-200/60"
+                          >
+                            {children}
+                          </code>
+                        );
+                      }
+                      return (
+                        <code {...props} className={className}>
+                          {children}
+                        </code>
+                      );
+                    },
+                    a: ({ node, children, href, ...props }: any) => {
                       if (!href || !href.trim()) return null;
+                      const linkContent = renderLinkText(children, href);
                       return (
                         <a
                           {...props}
                           href={href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 underline font-medium hover:text-blue-800 break-all"
+                          className="text-[#0061ff] underline underline-offset-2 font-medium hover:text-blue-800 break-all"
                         >
-                          {wrapTextWithSpans(children)}
+                          {message.isStreaming ? linkContent : wrapTextWithSpans(linkContent)}
                         </a>
                       );
                     },
@@ -395,7 +520,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </ReactMarkdown>
 
                 {message.isStreaming && (
-                  <span className="inline-block w-1.5 h-4 ml-1 bg-blue-600 animate-pulse align-middle" />
+                  <span className="inline-block w-1.5 h-4 ml-1 bg-[#0061ff] animate-pulse align-middle" />
                 )}
               </div>
             )}
