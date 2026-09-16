@@ -100,9 +100,9 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
           description: "지하철역에서 캠퍼스로 진입하는 순환 및 시내버스 실시간 현황을 확인합니다.",
         },
         {
-          title: "송도 캠퍼스 셔틀버스 도착 시간",
-          prompt: "지금 송도 캠퍼스 셔틀버스 언제 와?",
-          description: "캠퍼스 내부 주요 정류소의 셔틀버스 실시간 도착 정보를 조회합니다.",
+          title: "인천대학교 정문 버스 도착 시간",
+          prompt: "인천대 정문 정류소 버스 언제 와?",
+          description: "정문 정류소의 실시간 시내버스 도착 정보를 조회합니다.",
         },
         {
           title: "자연과학대학 정류소 버스",

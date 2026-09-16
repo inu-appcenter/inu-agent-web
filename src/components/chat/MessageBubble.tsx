@@ -297,7 +297,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         }`}
       >
         {isUser ? (
-          <div className="py-3 px-4.5 rounded-[18px] bg-[#0061ff] text-white text-[15px] font-medium leading-relaxed shadow-sm word-break keep-all">
+          <div className="py-2.5 px-5 rounded-[18px] bg-[#0061ff] text-white text-[15px] font-medium leading-relaxed shadow-sm word-break keep-all">
             {message.content}
           </div>
         ) : (
