@@ -468,11 +468,6 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
           </button>
         ))}
       </div>
-
-      <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5 text-slate-400 text-[11px]">
-        <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-        <span>환각 없이 실제 인천대학교 캠퍼스 연동 데이터 기반으로 정확하게 동작합니다.</span>
-      </div>
     </div>
   );
 };
