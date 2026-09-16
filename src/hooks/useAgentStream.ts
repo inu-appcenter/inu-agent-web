@@ -303,7 +303,7 @@ export function useAgentStream() {
       ) {
         window.parent.postMessage({ type: "GET_CLIENT_CONTEXT" }, "*");
         await new Promise<void>((resolve) => {
-          const timeout = setTimeout(() => resolve(), 12000);
+          const timeout = setTimeout(() => resolve(), 15000);
           const checker = setInterval(() => {
             if (
               clientContextRef.current?.academic ||
@@ -314,7 +314,7 @@ export function useAgentStream() {
               clearInterval(checker);
               resolve();
             }
-          }, 150);
+          }, 100);
         });
       }
 
