@@ -36,6 +36,8 @@ export function useAgentStream() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
   const [clientTenant, setClientTenant] = useState<string>("INTIP");
+  const [clientContext, setClientContext] = useState<Record<string, any> | null>(null);
+  const clientContextRef = useRef<Record<string, any> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Initialize client tenant from URL parameter e.g. ?client=UNIDORM
@@ -117,21 +119,33 @@ export function useAgentStream() {
     );
   }, [currentRoomId]);
 
-  // Listen for Native Mobile App (Action Runner) bridge responses (CustomEvent & postMessage)
+  // Listen for Native Mobile App (Action Runner) bridge responses and parent iframe messages
   useEffect(() => {
     const handleActionResult = async (rawPayload: any) => {
       try {
         if (!rawPayload) return;
-        
+
+        // Parent window (inu-portal-web) providing client context (academic, LMS events)
+        if (rawPayload.type === "INTIP_CLIENT_CONTEXT" && rawPayload.clientContext) {
+          console.log("[INU-Agent-Web] Received client context from parent:", rawPayload.clientContext);
+          setClientContext(rawPayload.clientContext);
+          clientContextRef.current = rawPayload.clientContext;
+          return;
+        }
+
         let actionResult: ClientActionResult | null = null;
-        
+
         if (rawPayload.type === "executeAgentActionResult" || rawPayload.type === "AGENT_ACTION_RESULT") {
+          const isSuccess = rawPayload.success !== undefined
+            ? Boolean(rawPayload.success)
+            : Boolean(rawPayload.result?.success);
+
           actionResult = {
             action_id: rawPayload.requestId || rawPayload.payload?.action_id || rawPayload.result?.action_id || "action_reported",
-            success: Boolean(rawPayload.success),
+            success: isSuccess,
             data: rawPayload.data !== undefined ? rawPayload.data : rawPayload.result?.data,
-            error_message: rawPayload.errorMessage || rawPayload.result?.error_message,
-            error_code: rawPayload.errorCode || rawPayload.result?.error_code,
+            error_message: rawPayload.errorMessage || rawPayload.result?.errorMessage || rawPayload.result?.error_message,
+            error_code: rawPayload.errorCode || rawPayload.result?.errorCode || rawPayload.result?.error_code,
           };
         }
 
@@ -186,6 +200,12 @@ export function useAgentStream() {
 
     window.addEventListener("intipAgentResult", handleCustomEvent);
     window.addEventListener("message", handleMessageEvent);
+
+    // If embedded inside an iframe (e.g. inu-portal-web AgentChatModal), request initial client context
+    if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "GET_CLIENT_CONTEXT" }, "*");
+    }
+
     return () => {
       window.removeEventListener("intipAgentResult", handleCustomEvent);
       window.removeEventListener("message", handleMessageEvent);
@@ -256,6 +276,7 @@ export function useAgentStream() {
           body: JSON.stringify({
             message: text,
             client: clientTenant,
+            client_context: clientContextRef.current || undefined,
             history: currentRoom.messages.slice(-6).map((m) => ({
               role: m.role,
               content: m.content,
@@ -330,6 +351,16 @@ export function useAgentStream() {
                       payload: { instruction: action },
                       requestId: action.action_id,
                     })
+                  );
+                } else if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+                  // Forward to parent window (inu-portal-web) if embedded in iframe
+                  window.parent.postMessage(
+                    {
+                      type: "EXECUTE_AGENT_ACTION",
+                      instruction: action,
+                      requestId: action.action_id,
+                    },
+                    "*"
                   );
                 } else {
                   // Fallback card for standalone web browser
@@ -449,5 +480,6 @@ export function useAgentStream() {
     stopGeneration,
     sendMessage,
     clientTenant,
+    clientContext,
   };
 }
