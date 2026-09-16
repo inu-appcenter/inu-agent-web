@@ -428,7 +428,6 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center justify-center gap-2">
           <span>안녕하세요! 저는 챗불이 에이전트예요</span>
-          <span className="text-2xl">🎓</span>
         </h2>
         <p className="text-xs md:text-sm text-slate-500 mt-1.5 max-w-md mx-auto leading-relaxed">
           궁금한 캠퍼스 도메인을 선택하면 에이전트가 실제로 수행할 수 있는 다양한 구체적 작업들을 확인하실 수 있어요.

@@ -22,7 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onToggleSidebar}
             title="사이드바 열기"
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-white/60 rounded-xl transition-all shadow-2xs cursor-pointer"
+            className="md:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-white/60 rounded-xl transition-all shadow-2xs cursor-pointer"
           >
             <PanelLeftOpen size={20} />
           </button>

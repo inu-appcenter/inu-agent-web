@@ -6,6 +6,8 @@ import {
   Check,
   X,
   PanelLeftClose,
+  PanelLeftOpen,
+  SquarePen,
   GraduationCap,
 } from "lucide-react";
 import { ChatRoom } from "../../types/agent";
@@ -72,27 +74,85 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside
-      className={`fixed md:static inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 bg-white/75 backdrop-blur-xl border-r border-slate-200/60 flex flex-col p-4 transition-all duration-300 ease-in-out shadow-xl md:shadow-none ${
-        isOpen
-          ? "translate-x-0 opacity-100"
-          : "-translate-x-full md:-ml-[280px] opacity-0 pointer-events-none"
-      }`}
-    >
-      {/* Sidebar Header */}
-      <div className="flex items-center justify-between w-full mb-4 px-1">
-        <div className="flex items-center gap-2">
-          <img src={ChatbotLogo} alt="챗불이 로고" className="w-8 h-8 object-contain" />
-          <span className="text-base font-bold text-slate-800 tracking-tight">인팁 비서</span>
+    <>
+      {/* 1. 접힘 상태: 데스크톱 미니 세로 사이드바 (Gemini 스타일 레일) */}
+      {!isOpen && (
+        <aside className="hidden md:flex flex-col items-center py-2.5 px-2.5 w-[68px] flex-shrink-0 bg-white/75 backdrop-blur-xl border-r border-slate-200/60 z-30 transition-all duration-300 select-none animate-in fade-in duration-200">
+          {/* 상단 챗불이 로고 / 마우스 호버 시 사이드바 열기 버튼 */}
+          <div className="h-[48px] flex items-center justify-center">
+            <button
+              onClick={onToggleSidebar}
+              className="group relative w-11 h-11 flex items-center justify-center rounded-2xl hover:bg-slate-100/90 text-slate-700 hover:text-slate-900 transition-all cursor-pointer"
+              aria-label="사이드바 열기"
+            >
+              {/* 평상시: 챗불이 로고 */}
+              <img
+                src={ChatbotLogo}
+                alt="챗불이 로고"
+                className="w-7 h-7 object-contain transition-all duration-150 group-hover:opacity-0 group-hover:scale-75 pointer-events-none"
+              />
+              {/* 마우스 호버 시: 펼침 아이콘 */}
+              <PanelLeftOpen
+                size={20}
+                className="absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-all duration-150 text-slate-700 pointer-events-none"
+              />
+              {/* Gemini 스타일 플로팅 툴팁 라벨 (사이드바 열기) */}
+              <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-black text-white text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50">
+                사이드바 열기
+              </div>
+            </button>
+          </div>
+
+          {/* 새 채팅 버튼 (상단 버튼 아래 조금 간격두고 배치 mt-3) */}
+          <button
+            onClick={onNewChat}
+            className="group relative mt-3 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 hover:bg-slate-100 border border-slate-200/80 text-slate-700 hover:text-slate-900 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+            aria-label="새로운 대화"
+          >
+            <SquarePen size={18} />
+            {/* Gemini 스타일 플로팅 툴팁 라벨 (새로운 대화) */}
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-black text-white text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50">
+              새로운 대화
+            </div>
+          </button>
+
+          {/* 하단 미니 로고 */}
+          <div className="mt-auto pb-2 flex flex-col items-center">
+            <a
+              href="https://home.inuappcenter.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="opacity-50 hover:opacity-100 transition-opacity p-1"
+              title="인천대학교 앱센터"
+            >
+              <img src={ChatbotLogo} alt="앱센터" className="w-5 h-5 grayscale hover:grayscale-0 transition-all" />
+            </a>
+          </div>
+        </aside>
+      )}
+
+      {/* 2. 펼침 상태: 풀 사이즈 사이드바 (280px) */}
+      <aside
+        className={`fixed md:static inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 bg-white/75 backdrop-blur-xl border-r border-slate-200/60 flex flex-col p-4 transition-all duration-300 ease-in-out shadow-xl md:shadow-none ${
+          isOpen
+            ? "translate-x-0 opacity-100"
+            : "-translate-x-full md:hidden opacity-0 pointer-events-none"
+        }`}
+      >
+        {/* Sidebar Header */}
+        <div className="flex items-center justify-between w-full mb-4 px-1">
+          <div className="flex items-center gap-2">
+            <img src={ChatbotLogo} alt="챗불이 로고" className="w-8 h-8 object-contain" />
+            <span className="text-base font-bold text-slate-800 tracking-tight">챗불이 에이전트</span>
+          </div>
+          <button
+            onClick={onToggleSidebar}
+            title="사이드바 닫기"
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+          >
+            <PanelLeftClose size={18} />
+          </button>
         </div>
-        <button
-          onClick={onToggleSidebar}
-          title="사이드바 닫기"
-          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-        >
-          <PanelLeftClose size={18} />
-        </button>
-      </div>
 
       {/* New Chat Button */}
       <button
@@ -191,5 +251,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </a>
       </div>
     </aside>
+    </>
   );
 };
