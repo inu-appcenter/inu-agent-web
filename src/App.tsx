@@ -92,7 +92,7 @@ export default function App() {
           className="flex-1 overflow-y-auto px-4 md:px-8 pt-4 pb-[110px] flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar"
         >
           {currentRoom.messages.length === 0 ? (
-            <div className="flex-1 flex flex-col justify-center items-center w-full max-w-2xl py-6">
+            <div className="flex-1 flex flex-col justify-center items-center w-full max-w-3xl py-6">
               <QuickPrompts onSelect={(prompt) => sendMessage(prompt)} />
             </div>
           ) : (
