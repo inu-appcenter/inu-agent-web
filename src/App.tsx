@@ -143,13 +143,11 @@ export default function App() {
         {/* Scrollable Chat Message Area */}
         <div
           ref={chatAreaRef}
-          style={{ paddingBottom: "calc(110px + env(safe-area-inset-bottom, 0px))" }}
-          className={`flex-1 px-4 md:px-8 pt-2 md:pt-3 flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar ${
-            currentRoom.messages.length === 0 ? "overflow-hidden h-full" : "overflow-y-auto"
-          }`}
+          style={{ paddingBottom: "calc(110px + var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))" }}
+          className="flex-1 w-full px-4 md:px-8 pt-2 md:pt-3 flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar overflow-y-auto"
         >
           {currentRoom.messages.length === 0 ? (
-            <div className="flex-1 w-full max-w-3xl flex flex-col items-center h-full overflow-hidden">
+            <div className="w-full max-w-3xl flex flex-col items-center my-auto min-h-0">
               <QuickPrompts onSelect={(prompt) => sendMessage(prompt)} />
             </div>
           ) : (

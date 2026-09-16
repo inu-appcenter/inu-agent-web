@@ -353,7 +353,7 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
     return (
       <div
         key={`domain-detail-${selectedDomainId}`}
-        className="w-full max-w-2xl mx-auto h-full flex flex-col overflow-hidden text-left animate-in fade-in duration-200"
+        className="w-full max-w-2xl mx-auto flex flex-col text-left animate-in fade-in duration-200"
       >
         {/* 상단 고정 헤더: 스크롤해도 전혀 끌려내려오지 않고 상단에 딱 붙어있음 */}
         <div className="flex-shrink-0 pt-1 pb-2.5">
@@ -385,7 +385,7 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
         {/* 내부 스크롤 영역: 작업 예시 카드들만 독립적으로 스크롤 */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto custom-scrollbar pt-3 pb-8 pr-1 space-y-2.5"
+          className="overflow-y-auto custom-scrollbar pt-2 pb-6 pr-1 space-y-2.5 max-h-[60vh] md:max-h-[70vh]"
         >
           <div className="flex items-center justify-between px-1 mb-1">
             <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
@@ -434,10 +434,10 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
 
   // 2. 초기 메인 도메인 카드 그리드 화면
   return (
-    <div className="w-full max-w-2xl mx-auto h-full flex flex-col justify-center overflow-y-auto custom-scrollbar py-2 md:py-4 px-2 text-center animate-in fade-in duration-200">
+    <div className="w-full max-w-2xl mx-auto flex flex-col justify-start md:justify-center py-2 md:py-4 px-2 text-center animate-in fade-in duration-200">
       {/* 챗불이 환영 인사 */}
-      <div className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center justify-center gap-2">
+      <div className="mb-4 md:mb-6 shrink-0 pt-1">
+        <h2 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight flex items-center justify-center gap-2">
           <span>안녕하세요! 저는 챗불이 에이전트예요</span>
         </h2>
         <p className="text-xs md:text-sm text-slate-500 mt-1.5 max-w-md mx-auto leading-relaxed">

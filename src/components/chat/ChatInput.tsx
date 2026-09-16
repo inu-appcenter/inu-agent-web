@@ -58,7 +58,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   return (
     <div
-      style={{ bottom: "max(16px, env(safe-area-inset-bottom, 16px))" }}
+      style={{ bottom: "max(16px, calc(var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 16px))" }}
       className="absolute left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[800px] z-20 flex flex-col gap-2 pointer-events-auto"
     >
       <div

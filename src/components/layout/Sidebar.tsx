@@ -75,6 +75,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
+      style={{
+        paddingTop: "var(--native-safe-area-inset-top, env(safe-area-inset-top, 0px))",
+        paddingBottom: "var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))",
+      }}
       className={`fixed md:static inset-y-0 left-0 z-40 flex-shrink-0 bg-white/75 backdrop-blur-xl border-r border-slate-200/60 flex flex-col transition-all duration-300 ease-in-out shadow-xl md:shadow-none select-none ${
         isOpen
           ? "w-[280px] translate-x-0 opacity-100 p-4 overflow-hidden"
