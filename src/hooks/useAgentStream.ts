@@ -291,7 +291,7 @@ export function useAgentStream() {
         headers["Authorization"] = authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`;
       }
 
-      // 학적/성적/과제 등 개인화 정보가 필요한 질의의 경우, 부모 웹뷰의 실시간 Client Context(히든 웹뷰 스크래핑 결과) 도착을 최대 4초 대기
+      // 학적/성적/과제 등 개인화 정보가 필요한 질의의 경우, 부모 웹뷰의 실시간 Client Context(히든 웹뷰 스크래핑 결과) 도착을 대기
       const isPersonalizedQuery = /학적|학점|졸업|취득|성적|과제|이러닝|수강|전공|입학|복학|휴학|평점/i.test(text);
       if (
         isPersonalizedQuery &&
@@ -303,14 +303,18 @@ export function useAgentStream() {
       ) {
         window.parent.postMessage({ type: "GET_CLIENT_CONTEXT" }, "*");
         await new Promise<void>((resolve) => {
-          const timeout = setTimeout(() => resolve(), 4000);
+          const timeout = setTimeout(() => resolve(), 12000);
           const checker = setInterval(() => {
-            if (clientContextRef.current?.academic || clientContextRef.current?.portal) {
+            if (
+              clientContextRef.current?.academic ||
+              clientContextRef.current?.portal?.linked === false ||
+              clientContextRef.current?.portal?.academicErrorCode
+            ) {
               clearTimeout(timeout);
               clearInterval(checker);
               resolve();
             }
-          }, 100);
+          }, 150);
         });
       }
 

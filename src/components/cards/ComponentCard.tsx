@@ -538,6 +538,29 @@ export const ComponentCard: React.FC<Props> = ({
     );
   }
 
+  // 6. 연동된 계정의 일시적 학적 조회 실패 안내 카드 (ACADEMIC_FETCH_FAILED)
+  if (type === "ACADEMIC_FETCH_FAILED") {
+    const detail = cardData.message || "포털 또는 학교 ERP 응답을 확인하지 못했습니다.";
+    return (
+      <div className="w-full bg-white rounded-2xl border border-amber-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <KeyRound className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <div className="font-bold text-slate-800 text-sm md:text-base mb-1">
+              연동된 포털에서 학적 정보를 가져오지 못했어요
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed mb-1">
+              계정 연동은 정상 유지되어 있습니다. 잠시 후 같은 질문을 다시 보내주세요. 계속되면 포털 로그인 상태 또는 학교 ERP 시스템을 확인해 주세요.
+            </p>
+            <p className="text-[11px] text-slate-400">{detail}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 7. 실시간 빈자리 감시(스나이퍼) 결과 카드 (CAMPUS_WATCH_RESULT)
   if (type === "CAMPUS_WATCH_RESULT") {
     const targetName = cardData.targetName || "힐링존";
