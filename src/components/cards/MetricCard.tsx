@@ -39,23 +39,38 @@ export const MetricCard: React.FC<Props> = ({ data }) => {
 
       {/* Main Metric Highlight */}
       {data.main_metric && (
-        <div className="py-4">
+        <div className="py-3.5">
           <div className="text-xs text-slate-500 mb-1">{data.main_metric.label}</div>
-          <div className="text-3xl font-extrabold text-blue-600 tracking-tight">
+          <div
+            className={`font-extrabold text-blue-600 tracking-tight leading-snug break-keep ${
+              data.main_metric.value.length > 10 ? "text-xl sm:text-2xl" : "text-3xl"
+            }`}
+          >
             {data.main_metric.value}
           </div>
         </div>
       )}
 
-      {/* Sub Details Grid */}
+      {/* Sub Details Grid (보안 안내 등 단일/긴 항목은 전체 너비로 시원하게 확장) */}
       {data.sub_details && data.sub_details.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-          {data.sub_details.map((item, idx) => (
-            <div key={idx} className="bg-slate-50 p-2.5 rounded-xl">
-              <span className="text-slate-500 block mb-0.5">{item.label}</span>
-              <span className="font-semibold text-slate-800">{item.value}</span>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+          {data.sub_details.map((item, idx) => {
+            const isFullWidth =
+              data.sub_details!.length === 1 || (item.value && item.value.length > 25);
+            return (
+              <div
+                key={idx}
+                className={`bg-slate-50 p-3 rounded-xl ${
+                  isFullWidth ? "sm:col-span-2" : ""
+                }`}
+              >
+                <span className="text-slate-500 font-medium block mb-1">{item.label}</span>
+                <span className="font-normal text-slate-700 leading-relaxed block break-keep">
+                  {item.value}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
 

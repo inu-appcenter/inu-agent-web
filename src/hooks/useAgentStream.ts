@@ -502,6 +502,8 @@ export function useAgentStream() {
                   const detailText =
                     action.auth_domain === "LMS"
                       ? "개인정보 보호(Zero-Knowledge)를 위해 이러닝 과제와 강의 진도는 INTIP 앱 또는 계정 연동을 통해 실시간으로 확인됩니다."
+                      : action.auth_domain === "LIBRARY"
+                      ? "개인정보 보호(Zero-Knowledge)를 위해 도서관 대출 현황 및 연체 정보는 INTIP 앱 연동을 통해 안전하게 확인됩니다."
                       : "개인정보 보호(Zero-Knowledge)를 위해 개인 학적 및 성적 정보는 INTIP 앱 연동을 통해 확인됩니다.";
 
                   const fallbackCard: GenerativeCard = {
@@ -509,7 +511,7 @@ export function useAgentStream() {
                     title: `${domainLabel} 계정 연동 안내`,
                     main_metric: {
                       label: metricLabel,
-                      value: "INTIP 연동",
+                      value: "INTIP 앱에서 사용할 수 있어요.",
                     },
                     sub_details: [
                       {
