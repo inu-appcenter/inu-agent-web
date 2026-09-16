@@ -163,24 +163,38 @@ export const ComponentCard: React.FC<Props> = ({
         onAction("lib_reserve_action");
       }
 
-      // 모바일 웹뷰 네이티브 브릿지 호출
+      // 모바일 웹뷰 네이티브 브릿지 호출 (도서관 계정 SSO 연동 세션으로 즉시 배정)
+      const seatId = cardData.seatId || cardData.seatNo || 1;
+      const instruction = {
+        action_id: `act_reserve_seat_${seatId}_${Date.now()}`,
+        auth_domain: "LIBRARY",
+        protocol: "HTTP_REST",
+        request: {
+          url: "https://lib.inu.ac.kr/pyxis-api/1/api/seat-charges",
+          method: "POST",
+          body: {
+            seatId: Number(seatId),
+            smufMethodCode: "MOBILE",
+          },
+        },
+      };
+
       if ((window as any).ReactNativeWebView) {
         (window as any).ReactNativeWebView.postMessage(
           JSON.stringify({
             type: "executeAgentAction",
-            payload: {
-              instruction: {
-                action_id: `seat_reserve_${Date.now()}`,
-                auth_domain: "LIBRARY",
-                protocol: "HTTP_REST",
-                request: {
-                  url: "https://lib.inu.ac.kr/seat/reserve",
-                  method: "POST",
-                  body: payload,
-                },
-              },
-            },
+            payload: { instruction },
+            requestId: instruction.action_id,
           })
+        );
+      } else if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: "EXECUTE_AGENT_ACTION",
+            instruction,
+            requestId: instruction.action_id,
+          },
+          "*"
         );
       }
     };
@@ -209,6 +223,85 @@ export const ComponentCard: React.FC<Props> = ({
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>확인 및 배정 신청하기</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 2-B. 스터디룸 예약 확인 카드 (LIBRARY_STUDY_ROOM_CONFIRM)
+  if (type === "LIBRARY_STUDY_ROOM_CONFIRM") {
+    const roomName = cardData.roomName || "스터디룸";
+    const date = cardData.date || "오늘";
+    const beginTime = cardData.beginTime || "";
+    const endTime = cardData.endTime || "";
+    const timeStr = beginTime && endTime ? `${beginTime} ~ ${endTime}` : beginTime || "이용 시간 미정";
+
+    const handleStudyConfirm = () => {
+      const instruction = {
+        action_id: `act_reserve_study_room_${cardData.roomId || 9}_${Date.now()}`,
+        auth_domain: "LIBRARY",
+        protocol: "HTTP_REST",
+        request: {
+          url: "https://lib.inu.ac.kr/pyxis-api/1/api/room-charges",
+          method: "POST",
+          body: {
+            roomId: cardData.roomId || 9,
+            roomUseSectionId: 1,
+            beginTime: `${date} ${beginTime}`,
+            endTime: `${date} ${endTime}`,
+            companionCnt: 1,
+            patronMessage: "학습 및 회의",
+            smufMethodCode: "MOBILE",
+          },
+        },
+      };
+
+      if ((window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(
+          JSON.stringify({
+            type: "executeAgentAction",
+            payload: { instruction },
+            requestId: instruction.action_id,
+          })
+        );
+      } else if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: "EXECUTE_AGENT_ACTION",
+            instruction,
+            requestId: instruction.action_id,
+          },
+          "*"
+        );
+      }
+    };
+
+    return (
+      <div className="w-full bg-white rounded-2xl border border-indigo-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-2 font-semibold text-slate-800 text-sm md:text-base pb-2 border-b border-slate-100">
+          <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+          <span>학산도서관 스터디룸 예약 신청 확인</span>
+        </div>
+
+        <div className="py-3">
+          <div className="text-xs text-slate-500 mb-1">예약 대상 스터디룸</div>
+          <div className="text-base font-bold text-slate-800">
+            {roomName} <span className="text-indigo-600">({timeStr})</span>
+          </div>
+          <div className="text-xs text-slate-600 mt-1">예약 날짜: {date}</div>
+          <p className="text-xs text-slate-600 leading-relaxed mt-2 bg-indigo-50/60 p-2.5 rounded-xl border border-indigo-100/60">
+            버튼을 누르면 INTIP 앱 내 보안 세션을 통해 학산도서관 스터디룸 예약이 즉시 접수됩니다.
+          </p>
+        </div>
+
+        <div className="flex gap-2 pt-2 border-t border-slate-100">
+          <button
+            onClick={handleStudyConfirm}
+            className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span>확인 및 예약 신청하기</span>
           </button>
         </div>
       </div>
