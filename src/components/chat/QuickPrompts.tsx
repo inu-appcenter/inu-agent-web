@@ -427,7 +427,7 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
       {/* 챗불이 환영 인사 */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center justify-center gap-2">
-          <span>안녕하세요! 저는 챗불이예요</span>
+          <span>안녕하세요! 저는 챗불이 에이전트예요</span>
           <span className="text-2xl">🎓</span>
         </h2>
         <p className="text-xs md:text-sm text-slate-500 mt-1.5 max-w-md mx-auto leading-relaxed">
