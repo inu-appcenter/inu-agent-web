@@ -27,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
             <PanelLeftOpen size={20} />
           </button>
         )}
-        <h1 className="text-base font-bold text-slate-800 tracking-tight">INU 에이전트</h1>
+        <h1 className="text-base font-bold text-slate-800 tracking-tight">챗불이 에이전트</h1>
       </div>
 
       <div className="flex items-center gap-2" />
