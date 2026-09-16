@@ -491,8 +491,8 @@ export const ComponentCard: React.FC<Props> = ({
     );
   }
 
-  // 5. 포털 계정 연동 안내 카드 (PORTAL_AUTH_REQUIRED)
-  if (type === "PORTAL_AUTH_REQUIRED") {
+  // 5. 포털 계정 연동 안내 카드 (PORTAL_AUTH_REQUIRED / LMS_AUTH_REQUIRED 공통)
+  if (type === "PORTAL_AUTH_REQUIRED" || type === "LMS_AUTH_REQUIRED") {
     const handleOpenModal = () => {
       // 1) 모바일 네이티브 브릿지 (앱 직송)
       if ((window as any).ReactNativeWebView) {
@@ -516,10 +516,10 @@ export const ComponentCard: React.FC<Props> = ({
           </div>
           <div className="flex-1">
             <div className="font-bold text-slate-800 text-sm md:text-base mb-1">
-              포털 계정 1회 연동이 필요해요
+              포털 계정 연동이 필요해요
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
-              학적 정보 조회를 위해 최초 1회 포털 로그인이 필요합니다. 입력하신 정보는 기기 보안 영역(KeyStore)에만 안전하게 보관됩니다.
+              학적 정보, 이러닝(LMS) 과제, 도서관 이용을 위해 최초 1회 포털 계정 연동이 필요합니다. 입력하신 정보는 기기 보안 영역(KeyStore)에만 안전하게 보관됩니다.
             </p>
           </div>
         </div>
@@ -532,50 +532,6 @@ export const ComponentCard: React.FC<Props> = ({
           >
             <KeyRound className="w-4 h-4" />
             <span>포털 계정 연동하기</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 6. 이러닝(LMS) 계정 연동 안내 카드 (LMS_AUTH_REQUIRED)
-  if (type === "LMS_AUTH_REQUIRED") {
-    const handleOpenLmsModal = () => {
-      if ((window as any).ReactNativeWebView) {
-        (window as any).ReactNativeWebView.postMessage(
-          JSON.stringify({ type: "openLmsAccountModal" })
-        );
-      }
-      if (typeof window !== "undefined" && window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: "OPEN_LMS_ACCOUNT_MODAL" }, "*");
-      }
-      window.dispatchEvent(new CustomEvent("openLmsAccountModal"));
-    };
-
-    return (
-      <div className="w-full bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 hover:shadow-md transition-shadow">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <GraduationCap className="w-5 h-5" />
-          </div>
-          <div className="flex-1">
-            <div className="font-bold text-slate-800 text-sm md:text-base mb-1">
-              사이버캠퍼스(LMS) 연동이 필요해요
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              강좌별 과제 마감 일정 및 미제출 과제를 확인하려면 LMS 로그인이 필요합니다. 기기 보안 영역에만 안전하게 보관됩니다.
-            </p>
-          </div>
-        </div>
-
-        <div className="pt-3 mt-3 border-t border-slate-100 flex justify-end">
-          <button
-            type="button"
-            onClick={handleOpenLmsModal}
-            className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-          >
-            <GraduationCap className="w-4 h-4" />
-            <span>LMS 계정 연동하기</span>
           </button>
         </div>
       </div>
