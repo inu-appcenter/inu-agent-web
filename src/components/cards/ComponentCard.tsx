@@ -8,6 +8,9 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
+  KeyRound,
+  Bell,
+  Clock,
 } from "lucide-react";
 import { handleAppNavigation } from "../../utils/navigation";
 
@@ -488,7 +491,182 @@ export const ComponentCard: React.FC<Props> = ({
     );
   }
 
-  // 5. 기본 Fallback
+  // 5. 포털 계정 연동 안내 카드 (PORTAL_AUTH_REQUIRED)
+  if (type === "PORTAL_AUTH_REQUIRED") {
+    const handleOpenModal = () => {
+      // 1) 모바일 네이티브 브릿지 (앱 직송)
+      if ((window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(
+          JSON.stringify({ type: "openPortalAccountModal" })
+        );
+      }
+      // 2) 부모창 iframe 통신 (inu-portal-web)
+      if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "OPEN_PORTAL_ACCOUNT_MODAL" }, "*");
+      }
+      // 3) 자체 창 이벤트
+      window.dispatchEvent(new CustomEvent("openPortalAccountModal"));
+    };
+
+    return (
+      <div className="w-full bg-white rounded-2xl border border-rose-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+            <KeyRound className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <div className="font-bold text-slate-800 text-sm md:text-base mb-1">
+              포털 계정 1회 연동이 필요해요
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              학적 정보 조회를 위해 최초 1회 포털 로그인이 필요합니다. 입력하신 정보는 기기 보안 영역(KeyStore)에만 안전하게 보관됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div className="pt-3 mt-3 border-t border-slate-100 flex justify-end">
+          <button
+            type="button"
+            onClick={handleOpenModal}
+            className="w-full py-2.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>포털 계정 연동하기</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 6. 이러닝(LMS) 계정 연동 안내 카드 (LMS_AUTH_REQUIRED)
+  if (type === "LMS_AUTH_REQUIRED") {
+    const handleOpenLmsModal = () => {
+      if ((window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(
+          JSON.stringify({ type: "openLmsAccountModal" })
+        );
+      }
+      if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "OPEN_LMS_ACCOUNT_MODAL" }, "*");
+      }
+      window.dispatchEvent(new CustomEvent("openLmsAccountModal"));
+    };
+
+    return (
+      <div className="w-full bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <GraduationCap className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <div className="font-bold text-slate-800 text-sm md:text-base mb-1">
+              사이버캠퍼스(LMS) 연동이 필요해요
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              강좌별 과제 마감 일정 및 미제출 과제를 확인하려면 LMS 로그인이 필요합니다. 기기 보안 영역에만 안전하게 보관됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div className="pt-3 mt-3 border-t border-slate-100 flex justify-end">
+          <button
+            type="button"
+            onClick={handleOpenLmsModal}
+            className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+          >
+            <GraduationCap className="w-4 h-4" />
+            <span>LMS 계정 연동하기</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 7. 실시간 빈자리 감시(스나이퍼) 결과 카드 (CAMPUS_WATCH_RESULT)
+  if (type === "CAMPUS_WATCH_RESULT") {
+    const targetName = cardData.targetName || "힐링존";
+    const remainingMinutes = cardData.remainingMinutes || cardData.job?.remainingMinutes || 90;
+
+    return (
+      <div className="w-full bg-white rounded-2xl border border-blue-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2 font-semibold text-slate-800 text-sm md:text-base">
+            <Bell className="w-4 h-4 text-blue-600" />
+            <span>실시간 빈자리 감시 시작</span>
+          </div>
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 animate-pulse">
+            감시 중
+          </span>
+        </div>
+
+        <div className="py-3">
+          <div className="text-base font-bold text-slate-800 mb-1">
+            {targetName} 빈자리 스나이퍼
+          </div>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            서버가 실시간으로 안전하게 감시 중입니다. 빈자리가 발생하는 즉시 푸시 알림을 보내드릴게요!
+          </p>
+          <div className="flex items-center gap-1.5 mt-2.5 text-xs text-amber-600 bg-amber-50/60 p-2 rounded-xl">
+            <Clock className="w-3.5 h-3.5 shrink-0" />
+            <span>최대 감시 시간: 약 {remainingMinutes}분 (만료 시 자동 종료)</span>
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-slate-100 flex justify-end">
+          <button
+            onClick={() => handleAppNavigation("/mypage/notification/smart-watch")}
+            className="w-full py-2.5 px-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span>감시 목록 및 관리 페이지 열기</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 8. 기기 로컬 감시 등록 카드 (LOCAL_WATCH_ACTION)
+  if (type === "LOCAL_WATCH_ACTION") {
+    const targetName = cardData.targetName || "좌석";
+    const handleRegisterLocal = () => {
+      const payload = {
+        watchType: cardData.watchType || "SPECIFIC_SEAT_SNIPER",
+        roomId: cardData.roomId,
+        roomName: targetName,
+        seatNo: cardData.seatNo,
+        durationMinutes: cardData.durationMinutes || 90,
+      };
+      if ((window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(
+          JSON.stringify({ type: "registerLocalWatchJob", payload })
+        );
+      }
+      if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "REGISTER_LOCAL_WATCH_JOB", payload }, "*");
+      }
+    };
+
+    return (
+      <div className="w-full bg-white rounded-2xl border border-indigo-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-2 font-semibold text-slate-800 text-sm md:text-base pb-3 border-b border-slate-100">
+          <Bell className="w-4 h-4 text-indigo-600" />
+          <span>기기 내 빈자리 감시 ({targetName})</span>
+        </div>
+        <p className="text-xs text-slate-600 py-3 leading-relaxed">
+          {targetName}의 빈자리를 앱에서 백그라운드로 감시합니다. 아래 버튼을 눌러 기기 알림을 활성화하세요.
+        </p>
+        <button
+          onClick={handleRegisterLocal}
+          className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+        >
+          <Bell className="w-4 h-4" />
+          <span>기기 감시 등록하기</span>
+        </button>
+      </div>
+    );
+  }
+
+  // 9. 기본 Fallback
   return (
     <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
       <div className="flex items-center gap-2 font-semibold text-slate-800 text-sm pb-2 border-b border-slate-100">
