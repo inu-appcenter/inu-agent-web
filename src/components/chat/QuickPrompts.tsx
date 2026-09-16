@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useLayoutEffect } from "react";
 import {
   Utensils,
   Bus,
@@ -42,6 +42,13 @@ interface DomainCategory {
 
 export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
   const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (selectedDomainId && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [selectedDomainId]);
 
   const domains: DomainCategory[] = [
     {
@@ -344,7 +351,10 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
   // 1. 도메인 상세 작업 예시 목록 화면 (상단 헤더 고정 + 내부만 독립 스크롤 레이아웃)
   if (currentDomain) {
     return (
-      <div className="w-full max-w-2xl mx-auto h-full flex flex-col overflow-hidden text-left animate-in fade-in duration-200">
+      <div
+        key={`domain-detail-${selectedDomainId}`}
+        className="w-full max-w-2xl mx-auto h-full flex flex-col overflow-hidden text-left animate-in fade-in duration-200"
+      >
         {/* 상단 고정 헤더: 스크롤해도 전혀 끌려내려오지 않고 상단에 딱 붙어있음 */}
         <div className="flex-shrink-0 pt-1 pb-2.5">
           <div className="flex items-center gap-2.5 mb-2">
@@ -373,7 +383,10 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
         </div>
 
         {/* 내부 스크롤 영역: 작업 예시 카드들만 독립적으로 스크롤 */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar pt-3 pb-8 pr-1 space-y-2.5">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto custom-scrollbar pt-3 pb-8 pr-1 space-y-2.5"
+        >
           <div className="flex items-center justify-between px-1 mb-1">
             <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
