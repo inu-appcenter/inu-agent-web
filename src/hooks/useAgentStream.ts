@@ -375,7 +375,7 @@ export function useAgentStream() {
                         messages: r.messages.map((msg) => {
                           if (msg.id !== assistantMsgId) return msg;
                           const currentCards = msg.cards || [];
-                          if (currentCards.some((c) => c.title === fallbackCard.title)) {
+                          if (currentCards.some((c) => ("title" in c && c.title === fallbackCard.title))) {
                             return msg;
                           }
                           return { ...msg, cards: [...currentCards, fallbackCard] };

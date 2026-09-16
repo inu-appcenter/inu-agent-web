@@ -102,6 +102,11 @@ export default function App() {
                   key={msg.id}
                   message={msg}
                   onChipClick={(chip) => sendMessage(chip)}
+                  onConfirmAction={(payload) => {
+                    if (payload?.roomName) {
+                      sendMessage(`${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정 신청을 진행해줘`);
+                    }
+                  }}
                 />
               ))}
             </div>

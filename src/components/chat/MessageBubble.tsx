@@ -10,11 +10,15 @@ import ChatbotLogo from "../../assets/chatbot-logo.svg";
 interface MessageBubbleProps {
   message: ChatMessage;
   onChipClick?: (chipText: string) => void;
+  onAction?: (actionId: string) => void;
+  onConfirmAction?: (payload: Record<string, any>) => void;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
   onChipClick,
+  onAction,
+  onConfirmAction,
 }) => {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
@@ -87,7 +91,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
             {/* Generative Cards rendering */}
             {message.cards && message.cards.length > 0 && (
-              <CardRenderer cards={message.cards} />
+              <CardRenderer
+                cards={message.cards}
+                onAction={onAction}
+                onConfirmAction={onConfirmAction}
+              />
             )}
 
             {/* Follow-up Suggested Action Chips */}

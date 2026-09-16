@@ -53,11 +53,20 @@ export interface ActionCardData {
   action_payload: Record<string, any>;
 }
 
+export interface ComponentCardData {
+  card_type: "COMPONENT_CARD";
+  type: string;
+  title?: string;
+  data: Record<string, any>;
+  link?: { label: string; route: string };
+}
+
 export type GenerativeCard =
   | MetricCardData
   | StatusCardData
   | ListCardData
-  | ActionCardData;
+  | ActionCardData
+  | ComponentCardData;
 
 export interface ClientActionRequest {
   url: string;

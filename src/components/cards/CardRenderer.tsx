@@ -4,6 +4,7 @@ import { MetricCard } from "./MetricCard";
 import { StatusCard } from "./StatusCard";
 import { ListCard } from "./ListCard";
 import { ActionCard } from "./ActionCard";
+import { ComponentCard } from "./ComponentCard";
 
 interface Props {
   cards?: GenerativeCard[];
@@ -30,6 +31,15 @@ export const CardRenderer: React.FC<Props> = ({ cards, onAction, onConfirmAction
                 key={idx}
                 data={card}
                 onConfirm={onConfirmAction}
+              />
+            );
+          case "COMPONENT_CARD":
+            return (
+              <ComponentCard
+                key={idx}
+                data={card}
+                onAction={onAction}
+                onConfirmAction={onConfirmAction}
               />
             );
           default:
