@@ -346,7 +346,7 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
     return (
       <div className="w-full max-w-2xl mx-auto h-full flex flex-col overflow-hidden text-left animate-in fade-in duration-200">
         {/* 상단 고정 헤더: 스크롤해도 전혀 끌려내려오지 않고 상단에 딱 붙어있음 */}
-        <div className="flex-shrink-0 pt-1 pb-3 border-b border-slate-200/80 bg-[#f7f8ff]/80 backdrop-blur-xs z-10">
+        <div className="flex-shrink-0 pt-1 pb-2.5">
           <div className="flex items-center gap-2.5 mb-2">
             <button
               onClick={() => setSelectedDomainId(null)}
