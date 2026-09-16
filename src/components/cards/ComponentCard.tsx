@@ -310,15 +310,56 @@ export const ComponentCard: React.FC<Props> = ({
 
   // 3. 학적 정보 카드 (ACADEMIC_INFO)
   if (type === "ACADEMIC_INFO") {
-    const studentName = cardData.name || cardData.studentName || "학생";
-    const studentId = cardData.studentId || cardData.id || cardData.hakbeon || "";
-    const department = cardData.department || cardData.dept || cardData.major || "";
-    const grade = cardData.grade || cardData.studentGrade || "";
-    const status = cardData.status || cardData.academicStatus || "재학";
-    const credits = cardData.totalCredits || cardData.credits || "";
+    const studentName =
+      cardData.koreanName ||
+      cardData.name ||
+      cardData.studentName ||
+      cardData.korNm ||
+      "학우님";
+    const studentId =
+      cardData.studentId ||
+      cardData.id ||
+      cardData.stdNo ||
+      cardData.hakbeon ||
+      (cardData.entryYear ? `${cardData.entryYear}학번` : "");
+    const department =
+      cardData.departmentName ||
+      cardData.department ||
+      cardData.dept ||
+      cardData.major ||
+      cardData.deptName ||
+      "";
+    const college = cardData.collegeName || cardData.colgNm || "";
+    const status =
+      cardData.enrollmentStatus ||
+      cardData.status ||
+      cardData.academicStatus ||
+      "재학";
+    const subStatus =
+      cardData.latestEnrollmentChange || cardData.flSchregModGbn || "";
+    const credits =
+      cardData.acquiredCredits ||
+      cardData.totalCredits ||
+      cardData.credits ||
+      "";
+    const gpa =
+      cardData.gradeAverage || cardData.gpa || cardData.mrksAvg || "";
+    const semester =
+      cardData.completedSemesterCount ||
+      cardData.completedSemesterName ||
+      (cardData.grade ? `${cardData.grade}학년` : "");
+    const advisor =
+      cardData.advisorProfessorName ||
+      cardData.advisor ||
+      cardData.profNm ||
+      "";
+
+    const displayAffiliation = [college, department].filter(Boolean).join(" ");
+    const badgeText =
+      subStatus && subStatus !== status ? `${status} · ${subStatus}` : status;
 
     return (
-      <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+      <div className="w-full bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2 font-semibold text-slate-800 text-sm md:text-base">
             <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
@@ -327,40 +368,51 @@ export const ComponentCard: React.FC<Props> = ({
             <span>학적 기본 정보</span>
           </div>
           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
-            {status}
+            {badgeText}
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 py-3 text-xs">
-          <div>
-            <span className="text-slate-400 block mb-0.5">성명</span>
-            <span className="font-semibold text-slate-800">{studentName}</span>
+        <div className="pt-3 pb-2 border-b border-slate-50">
+          <div className="flex items-baseline gap-2">
+            <span className="font-bold text-slate-900 text-base">{studentName}</span>
+            {studentId && (
+              <span className="text-xs text-slate-400 font-medium">{studentId}</span>
+            )}
           </div>
-          {studentId && (
-            <div>
-              <span className="text-slate-400 block mb-0.5">학번</span>
-              <span className="font-semibold text-slate-800">{studentId}</span>
-            </div>
-          )}
-          {department && (
-            <div className="col-span-2">
-              <span className="text-slate-400 block mb-0.5">소속 학과</span>
-              <span className="font-semibold text-slate-800">{department}</span>
-            </div>
-          )}
-          {grade && (
-            <div>
-              <span className="text-slate-400 block mb-0.5">학년</span>
-              <span className="font-semibold text-slate-800">{grade}학년</span>
-            </div>
-          )}
-          {credits && (
-            <div>
-              <span className="text-slate-400 block mb-0.5">취득 학점</span>
-              <span className="font-semibold text-slate-800">{credits}학점</span>
+          {displayAffiliation && (
+            <div className="text-xs text-slate-500 mt-0.5">
+              {displayAffiliation}
             </div>
           )}
         </div>
+
+        <div className="grid grid-cols-3 gap-2 py-3 text-center">
+          <div className="bg-slate-50/80 rounded-xl p-2.5">
+            <span className="text-[10px] text-slate-400 block mb-0.5 font-medium">취득 학점</span>
+            <span className="font-bold text-slate-800 text-xs md:text-sm">
+              {credits ? `${credits}학점` : "-"}
+            </span>
+          </div>
+          <div className="bg-slate-50/80 rounded-xl p-2.5">
+            <span className="text-[10px] text-slate-400 block mb-0.5 font-medium">평점 평균</span>
+            <span className="font-bold text-indigo-600 text-xs md:text-sm">
+              {gpa ? `${gpa}` : "-"}
+            </span>
+          </div>
+          <div className="bg-slate-50/80 rounded-xl p-2.5">
+            <span className="text-[10px] text-slate-400 block mb-0.5 font-medium">이수 학기</span>
+            <span className="font-bold text-slate-800 text-xs md:text-sm">
+              {semester || "-"}
+            </span>
+          </div>
+        </div>
+
+        {advisor && (
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50/50 text-indigo-900 text-xs font-medium my-1">
+            <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span>지도교수: {advisor} 교수님</span>
+          </div>
+        )}
 
         {data.link && (
           <div className="pt-2 border-t border-slate-100 flex justify-end">
@@ -368,7 +420,7 @@ export const ComponentCard: React.FC<Props> = ({
               onClick={() => handleAppNavigation(data.link?.route || "/mypage")}
               className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 py-1 px-2.5 rounded-lg hover:bg-indigo-50 transition-colors"
             >
-              <span>{data.link.label || "마이페이지 학적 상세"}</span>
+              <span>{data.link.label || "학적 정보 상세보기"}</span>
               <ExternalLink className="w-3 h-3" />
             </button>
           </div>
