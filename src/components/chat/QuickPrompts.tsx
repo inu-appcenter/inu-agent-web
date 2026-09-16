@@ -8,7 +8,7 @@ import {
   Phone,
   BellRing,
   CalendarDays,
-  ArrowLeft,
+  ChevronLeft,
   ChevronRight,
   Sparkles,
   Send,
@@ -341,38 +341,35 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
 
   const currentDomain = domains.find((d) => d.id === selectedDomainId);
 
-  // 1. 도메인 상세 작업 예시 목록 화면
+  // 1. 도메인 상세 작업 예시 목록 화면 (상단 헤더에 딱 붙는 레이아웃)
   if (currentDomain) {
     return (
-      <div className="w-full max-w-2xl mx-auto py-3 px-2 text-left animate-in fade-in duration-200">
-        {/* 상단 뒤로가기 바 */}
-        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200/80">
+      <div className="w-full max-w-2xl mx-auto pt-0 pb-6 px-1 text-left animate-in fade-in duration-200">
+        {/* 상단 네비게이션 헤더: < 뒤로가기 버튼 + 도메인 타이틀 */}
+        <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-slate-200/60">
           <button
             onClick={() => setSelectedDomainId(null)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-white bg-slate-100/80 border border-slate-200 transition-colors shadow-2xs cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-slate-700 hover:text-blue-600 hover:bg-white bg-slate-100/90 border border-slate-200/80 transition-all shadow-2xs hover:shadow-xs cursor-pointer shrink-0"
+            aria-label="뒤로가기"
+            title="뒤로가기"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            전체 도메인 목록
+            <ChevronLeft className="w-4 h-4 -translate-x-0.5" />
           </button>
-          <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80">
-            {currentDomain.badge}
-          </span>
-        </div>
 
-        {/* 도메인 헤더 안내 */}
-        <div className="flex items-start gap-3.5 mb-5 p-4 rounded-2xl bg-white/90 border border-slate-200/90 shadow-2xs backdrop-blur-xs">
-          <div className={`p-2.5 rounded-xl ${currentDomain.colorClass.bg} border ${currentDomain.colorClass.border} shrink-0`}>
-            {currentDomain.icon}
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className={`p-1.5 rounded-lg ${currentDomain.colorClass.bg} border ${currentDomain.colorClass.border} shrink-0`}>
+              {currentDomain.icon}
+            </div>
+            <h3 className="text-base font-bold text-slate-800 tracking-tight truncate">
               {currentDomain.title}
             </h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              {currentDomain.description}
-            </p>
           </div>
         </div>
+
+        {/* 도메인 설명 */}
+        <p className="text-xs text-slate-500 mb-4 px-0.5 leading-relaxed">
+          {currentDomain.description}
+        </p>
 
         {/* 세부 작업 예시 카드 그리드 */}
         <div className="space-y-2.5">
@@ -423,7 +420,7 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
 
   // 2. 초기 메인 도메인 카드 그리드 화면
   return (
-    <div className="w-full max-w-2xl mx-auto py-4 px-2 text-center animate-in fade-in duration-200">
+    <div className="w-full max-w-2xl mx-auto my-auto py-2 md:py-4 px-2 text-center animate-in fade-in duration-200">
       {/* 챗불이 환영 인사 */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center justify-center gap-2">
@@ -458,11 +455,8 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 group-hover:text-blue-600 shrink-0 pl-1 transition-colors">
-              <span className="hidden sm:inline text-[10px] text-slate-400 font-normal">
-                {item.tasks.length}개 예시
-              </span>
-              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+            <div className="flex items-center text-slate-300 group-hover:text-blue-500 shrink-0 pl-1 transition-colors">
+              <ChevronRight className="w-4 h-4" />
             </div>
           </button>
         ))}
