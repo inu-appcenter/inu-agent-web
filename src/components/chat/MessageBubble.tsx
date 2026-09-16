@@ -286,6 +286,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   return (
     <div
+      id={`msg-${message.id}`}
       className={`w-full max-w-[800px] flex gap-3 mb-6 ${
         isUser ? "justify-end" : "justify-start"
       }`}

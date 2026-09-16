@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useLayoutEffect } from "react";
 import { useAgentStream } from "./hooks/useAgentStream";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
@@ -27,20 +27,68 @@ export default function App() {
 
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const prevMsgLengthRef = useRef(currentRoom.messages.length);
+  const prevRoomIdRef = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    // 대화방 전환 또는 초기 진입 시: 마지막 사용자 질문 말풍선 위치로 instant 스크롤 고정
+    if (prevRoomIdRef.current !== currentRoomId) {
+      prevRoomIdRef.current = currentRoomId;
+      prevMsgLengthRef.current = currentRoom.messages.length;
+
+      if (currentRoom.messages.length === 0) {
+        if (chatAreaRef.current) {
+          chatAreaRef.current.scrollTop = 0;
+        }
+        return;
+      }
+
+      // 마지막 사용자 질문 말풍선 찾기
+      const lastUserMsg = [...currentRoom.messages].reverse().find((m) => m.role === "user");
+
+      const scrollToLastQuestion = () => {
+        if (!chatAreaRef.current) return;
+        const container = chatAreaRef.current;
+        if (lastUserMsg) {
+          const targetEl = document.getElementById(`msg-${lastUserMsg.id}`);
+          if (targetEl) {
+            const containerRect = container.getBoundingClientRect();
+            const targetRect = targetEl.getBoundingClientRect();
+            const offset = targetRect.top - containerRect.top;
+            // 상단 여백 16px를 두고 마지막 질문 말풍선이 화면 상단에 즉시 맞춰지도록 스크롤
+            container.scrollTop = Math.max(0, container.scrollTop + offset - 16);
+            return;
+          }
+        }
+        container.scrollTop = 0;
+      };
+
+      // 렌더링 페인트 전 즉시 위치 설정 (애니메이션 없이 고정된 채 렌더링)
+      scrollToLastQuestion();
+
+      // 브라우저 렌더링 파이프라인 레이아웃 지연 보정용 즉시 1회 재보정
+      const frameId = requestAnimationFrame(() => {
+        scrollToLastQuestion();
+      });
+
+      return () => cancelAnimationFrame(frameId);
+    }
+  }, [currentRoomId, currentRoom.messages]);
 
   useEffect(() => {
     // 요구사항 8: 스트리밍 중 드래그다운되는 스크롤 동작 완전 제거
-    // 사용자가 새 질문을 보냈거나 새 메시지가 추가되었을 때 1회만 스크롤
-    if (currentRoom.messages.length > prevMsgLengthRef.current) {
-      if (chatAreaRef.current) {
-        chatAreaRef.current.scrollTo({
-          top: chatAreaRef.current.scrollHeight,
-          behavior: "smooth",
-        });
+    // 동일한 방 내에서 사용자가 새 질문을 보냈거나 새 메시지가 추가되었을 때 1회만 스크롤
+    if (prevRoomIdRef.current === currentRoomId) {
+      if (currentRoom.messages.length > prevMsgLengthRef.current) {
+        if (chatAreaRef.current) {
+          chatAreaRef.current.scrollTo({
+            top: chatAreaRef.current.scrollHeight,
+            behavior: "smooth",
+          });
+        }
       }
     }
     prevMsgLengthRef.current = currentRoom.messages.length;
-  }, [currentRoom.messages.length]);
+  }, [currentRoom.messages.length, currentRoomId]);
 
   const handleSelectRoom = (id: string) => {
     setCurrentRoomId(id);
