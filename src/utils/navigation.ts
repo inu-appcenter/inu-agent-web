@@ -71,12 +71,12 @@ export function handleAppNavigation(url?: string) {
     return;
   }
 
-  // 4. Fallback standalone web
+  // 4. Fallback standalone web: open in new tab so user keeps their chat session intact
   if (url.startsWith("http://") || url.startsWith("https://")) {
     window.open(url, "_blank", "noopener,noreferrer");
   } else {
     const portalBase = import.meta.env.VITE_PORTAL_WEB_URL || "https://intip-test.pages.dev";
-    window.location.href = `${portalBase}${url.startsWith("/") ? "" : "/"}${url}`;
+    window.open(`${portalBase}${url.startsWith("/") ? "" : "/"}${url}`, "_blank", "noopener,noreferrer");
   }
 }
 

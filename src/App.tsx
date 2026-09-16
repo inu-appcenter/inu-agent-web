@@ -26,15 +26,21 @@ export default function App() {
   } = useAgentStream();
 
   const chatAreaRef = useRef<HTMLDivElement>(null);
+  const prevMsgLengthRef = useRef(currentRoom.messages.length);
 
   useEffect(() => {
-    if (chatAreaRef.current) {
-      chatAreaRef.current.scrollTo({
-        top: chatAreaRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+    // 요구사항 8: 스트리밍 중 드래그다운되는 스크롤 동작 완전 제거
+    // 사용자가 새 질문을 보냈거나 새 메시지가 추가되었을 때 1회만 스크롤
+    if (currentRoom.messages.length > prevMsgLengthRef.current) {
+      if (chatAreaRef.current) {
+        chatAreaRef.current.scrollTo({
+          top: chatAreaRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }
     }
-  }, [currentRoom.messages.length, currentRoom.messages]);
+    prevMsgLengthRef.current = currentRoom.messages.length;
+  }, [currentRoom.messages.length]);
 
   const handleSelectRoom = (id: string) => {
     setCurrentRoomId(id);
@@ -89,7 +95,8 @@ export default function App() {
         {/* Scrollable Chat Message Area */}
         <div
           ref={chatAreaRef}
-          className="flex-1 overflow-y-auto px-4 md:px-8 pt-4 pb-[110px] flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar"
+          style={{ paddingBottom: "calc(110px + env(safe-area-inset-bottom, 0px))" }}
+          className="flex-1 overflow-y-auto px-4 md:px-8 pt-4 flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar"
         >
           {currentRoom.messages.length === 0 ? (
             <div className="flex-1 flex flex-col justify-center items-center w-full max-w-3xl py-6">

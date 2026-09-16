@@ -19,20 +19,34 @@ const generateUUID = (): string => {
 
 export function useAgentStream() {
   const [rooms, setRooms] = useState<ChatRoom[]>(() => {
+    let initialRooms: ChatRoom[] = [];
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) initialRooms = parsed;
       }
     } catch (e) {
       console.warn("로컬 대화방 로드 실패:", e);
     }
-    const initialId = generateUUID();
-    return [{ id: initialId, title: "새로운 대화", createdAt: Date.now(), messages: [] }];
+    // 요구사항 7: 앱 최초 진입 시 항상 새로운 대화(메인 화면)로 시작
+    const emptyRoom = initialRooms.find((r) => r.messages.length === 0);
+    if (!emptyRoom) {
+      const freshRoom: ChatRoom = {
+        id: generateUUID(),
+        title: "새로운 대화",
+        createdAt: Date.now(),
+        messages: [],
+      };
+      return [freshRoom, ...initialRooms];
+    }
+    return initialRooms;
   });
 
-  const [currentRoomId, setCurrentRoomId] = useState<string>(() => rooms[0]?.id || generateUUID());
+  const [currentRoomId, setCurrentRoomId] = useState<string>(() => {
+    const emptyRoom = rooms.find((r) => r.messages.length === 0);
+    return emptyRoom ? emptyRoom.id : (rooms[0]?.id || generateUUID());
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
   const [clientTenant, setClientTenant] = useState<string>("INTIP");
@@ -59,6 +73,14 @@ export function useAgentStream() {
   const currentRoom = rooms.find((r) => r.id === currentRoomId) || rooms[0];
 
   const createNewRoom = useCallback(() => {
+    // 요구사항 1: 이미 빈 대화방이 있으면 새로 만들지 않고 해당 방 선택
+    const existingEmptyRoom = rooms.find((r) => r.messages.length === 0);
+    if (existingEmptyRoom) {
+      setCurrentRoomId(existingEmptyRoom.id);
+      if (window.innerWidth <= 768) setIsSidebarOpen(false);
+      return;
+    }
+
     const newId = generateUUID();
     const newRoom: ChatRoom = {
       id: newId,
@@ -69,7 +91,7 @@ export function useAgentStream() {
     setRooms((prev) => [newRoom, ...prev]);
     setCurrentRoomId(newId);
     if (window.innerWidth <= 768) setIsSidebarOpen(false);
-  }, []);
+  }, [rooms]);
 
   const deleteRoom = useCallback((id: string) => {
     setRooms((prev) => {
@@ -311,7 +333,52 @@ export function useAgentStream() {
             try {
               const event = JSON.parse(jsonStr);
 
-              if (event.event_type === "TOKEN" && event.content) {
+              if (event.event_type === "STATUS") {
+                const statusItem = {
+                  id: event.status_id || `tool_${Date.now()}`,
+                  category: event.status_category || "SYSTEM",
+                  title: event.status_title || "작업 처리 중...",
+                  state: event.status_state || "running",
+                };
+                setRooms((prev) =>
+                  prev.map((r) => {
+                    if (r.id !== currentRoomId) return r;
+                    return {
+                      ...r,
+                      messages: r.messages.map((msg) => {
+                        if (msg.id !== assistantMsgId) return msg;
+                        const currentTools = msg.toolStatuses || [];
+                        const existingIdx = currentTools.findIndex((t) => t.id === statusItem.id);
+                        let updatedTools;
+                        if (existingIdx >= 0) {
+                          updatedTools = [...currentTools];
+                          updatedTools[existingIdx] = statusItem;
+                        } else {
+                          updatedTools = [...currentTools, statusItem];
+                        }
+                        return { ...msg, toolStatuses: updatedTools };
+                      }),
+                    };
+                  })
+                );
+              } else if (event.event_type === "THINKING" && event.thinking) {
+                setRooms((prev) =>
+                  prev.map((r) => {
+                    if (r.id !== currentRoomId) return r;
+                    return {
+                      ...r,
+                      messages: r.messages.map((msg) => {
+                        if (msg.id !== assistantMsgId) return msg;
+                        const prevThinking = msg.thinking || "";
+                        const newThinking = prevThinking
+                          ? `${prevThinking}\n${event.thinking}`
+                          : event.thinking;
+                        return { ...msg, thinking: newThinking };
+                      }),
+                    };
+                  })
+                );
+              } else if (event.event_type === "TOKEN" && event.content) {
                 setRooms((prev) =>
                   prev.map((r) => {
                     if (r.id !== currentRoomId) return r;

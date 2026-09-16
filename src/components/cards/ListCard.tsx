@@ -29,7 +29,7 @@ export const ListCard: React.FC<Props> = ({ data }) => {
                   : "hover:bg-slate-50"
               }`}
             >
-              <div className="pr-3">
+              <div className="pr-3 min-w-0 flex-1">
                 <div
                   className={`text-xs md:text-sm font-medium line-clamp-1 ${
                     isClickable ? "text-blue-950 hover:text-blue-600" : "text-slate-800"
@@ -38,7 +38,7 @@ export const ListCard: React.FC<Props> = ({ data }) => {
                   {item.title}
                 </div>
                 {item.subtitle && (
-                  <div className="text-[11px] text-slate-400 mt-0.5">
+                  <div className="text-[11px] text-slate-400 mt-0.5 break-all line-clamp-2 md:line-clamp-1 overflow-hidden">
                     {item.subtitle}
                   </div>
                 )}

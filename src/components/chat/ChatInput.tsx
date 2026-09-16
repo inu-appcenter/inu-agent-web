@@ -57,7 +57,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="absolute bottom-[max(20px,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[800px] z-20 flex flex-col gap-2 pointer-events-auto">
+    <div
+      style={{ bottom: "max(16px, env(safe-area-inset-bottom, 16px))" }}
+      className="absolute left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[800px] z-20 flex flex-col gap-2 pointer-events-auto"
+    >
       <div
         className={`relative rounded-[24px] bg-gradient-to-t from-white/60 via-white/70 to-slate-100/70 backdrop-blur-md shadow-[0px_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 border ${
           isFocused ? "border-blue-500/50 shadow-blue-500/10" : "border-white/80"

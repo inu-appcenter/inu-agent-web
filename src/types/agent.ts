@@ -93,6 +93,13 @@ export interface ClientActionResult {
   error_message?: string;
 }
 
+export interface AgentToolStatus {
+  id: string;
+  category: string;
+  title: string;
+  state: "running" | "completed";
+}
+
 export interface ChatMessage {
   id: string;
   role: Role;
@@ -102,6 +109,8 @@ export interface ChatMessage {
   isStreaming?: boolean;
   suggestedActions?: string[];
   timestamp: string;
+  thinking?: string;
+  toolStatuses?: AgentToolStatus[];
 }
 
 export interface ChatRoom {
