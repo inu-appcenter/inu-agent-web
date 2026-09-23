@@ -31,14 +31,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // 초기 마운트 시에만 1회 포커스 시도 (답변 생성 완료 후 멋대로 키보드가 다시 올라오는 현상 방지)
   useEffect(() => {
-    if (!isLoading && autoFocus) {
+    if (autoFocus) {
       const timer = setTimeout(() => {
         textareaRef.current?.focus();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, autoFocus]);
+  }, []);
 
   const handleInputResize = () => {
     if (textareaRef.current) {
