@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { X } from "lucide-react";
 import { useAgentStream } from "./hooks/useAgentStream";
 import { Sidebar } from "./components/layout/Sidebar";
@@ -31,9 +31,19 @@ export default function App() {
     setRecognizedText,
   } = useAgentStream();
 
+  const [isPromptScrolled, setIsPromptScrolled] = useState(false);
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const prevMsgLengthRef = useRef(currentRoom.messages.length);
   const prevRoomIdRef = useRef<string | null>(null);
+
+  const handleChatAreaScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const top = e.currentTarget.scrollTop;
+    if (top > 12) {
+      if (!isPromptScrolled) setIsPromptScrolled(true);
+    } else {
+      if (isPromptScrolled) setIsPromptScrolled(false);
+    }
+  };
 
   useLayoutEffect(() => {
     // 대화방 전환 또는 초기 진입 시: 마지막 사용자 질문 말풍선 위치로 instant 스크롤 고정
@@ -201,15 +211,19 @@ export default function App() {
         {/* Scrollable Chat Message Area */}
         <div
           ref={chatAreaRef}
+          onScroll={handleChatAreaScroll}
           style={{
             paddingBottom:
-              "calc(110px + var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))",
+              "calc(140px + var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))",
           }}
           className="flex-1 w-full px-4 md:px-8 pt-2 md:pt-3 flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar overflow-y-auto"
         >
           {currentRoom.messages.length === 0 ? (
-            <div className="w-full max-w-3xl flex flex-col items-center my-auto min-h-0">
-              <QuickPrompts onSelect={(prompt) => sendMessage(prompt)} />
+            <div className="w-full max-w-3xl flex flex-col items-center pt-2 pb-6 min-h-0">
+              <QuickPrompts
+                onSelect={(prompt) => sendMessage(prompt)}
+                isScrolled={isPromptScrolled}
+              />
             </div>
           ) : (
             <div className="w-full max-w-3xl flex flex-col items-center">

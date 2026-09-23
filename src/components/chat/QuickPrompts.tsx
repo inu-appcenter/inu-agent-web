@@ -16,6 +16,7 @@ import {
 
 interface Props {
   onSelect: (prompt: string) => void;
+  isScrolled?: boolean;
 }
 
 interface TaskExample {
@@ -40,7 +41,7 @@ interface DomainCategory {
   tasks: TaskExample[];
 }
 
-export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
+export const QuickPrompts: React.FC<Props> = ({ onSelect, isScrolled = false }) => {
   const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -385,7 +386,7 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
         {/* 내부 스크롤 영역: 작업 예시 카드들만 독립적으로 스크롤 */}
         <div
           ref={scrollContainerRef}
-          className="overflow-y-auto custom-scrollbar pt-2 pb-6 pr-1 space-y-2.5 max-h-[60vh] md:max-h-[70vh]"
+          className="overflow-y-auto custom-scrollbar pt-2 pb-28 pr-1 space-y-2.5 max-h-[60vh] md:max-h-[70vh]"
         >
           <div className="flex items-center justify-between px-1 mb-1">
             <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
@@ -434,9 +435,15 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
 
   // 2. 초기 메인 도메인 카드 그리드 화면
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col justify-start md:justify-center py-2 md:py-4 px-2 text-center animate-in fade-in duration-200">
-      {/* 챗불이 환영 인사 */}
-      <div className="mb-4 md:mb-6 shrink-0 pt-1">
+    <div className="w-full max-w-2xl mx-auto flex flex-col justify-start md:justify-center py-1 md:py-3 px-2 text-center animate-in fade-in duration-200">
+      {/* 챗불이 환영 인사: 스크롤 시작 시 자연스럽게 Fade out 되며 상단 공간 확보, 최상단 복귀 시 Fade in */}
+      <div
+        className={`shrink-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isScrolled
+            ? "opacity-0 -translate-y-3 max-h-0 mb-0 scale-95 pointer-events-none overflow-hidden"
+            : "opacity-100 translate-y-0 max-h-40 mb-3.5 md:mb-6 scale-100"
+        }`}
+      >
         <h2 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight flex items-center justify-center gap-2">
           <span>안녕하세요! 저는 챗불이 에이전트예요</span>
         </h2>
