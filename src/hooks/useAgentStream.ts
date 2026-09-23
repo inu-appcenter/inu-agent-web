@@ -253,9 +253,13 @@ export function useAgentStream() {
         const payload = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
         if (payload?.type === "HOST_COMMAND") {
           if (payload.action === "TRIGGER_OPEN") {
+            createNewRoom();
+            setRecognizedText("");
             setAiState("listening");
           } else if (payload.action === "FORCE_CLOSE") {
             setAiState("closed");
+            createNewRoom();
+            setRecognizedText("");
           } else if (payload.action === "SET_EXPANDED") {
             setAiState("expanded");
           } else if (payload.action === "SET_HALF") {

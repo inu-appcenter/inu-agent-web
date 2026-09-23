@@ -347,8 +347,8 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
                   {aiState === "listening" && "인천대학교 캠퍼스에 대해 무엇이든 물어보세요"}
                   {aiState === "recognized" && (recognizedText || "인식 완료")}
                   {aiState === "thinking" && "생각하는 중..."}
-                  {aiState === "answering" && "답변 중..."}
-                  {aiState === "expanded" && "질문을 추가로 입력하세요"}
+                  {aiState === "answering" && (currentMessage?.isStreaming ? "답변 중..." : "인천대학교 캠퍼스에 대해 무엇이든 물어보세요")}
+                  {aiState === "expanded" && (currentMessage?.isStreaming ? "답변 중..." : "질문을 추가로 입력하세요")}
                 </span>
               </div>
             )}
@@ -364,7 +364,7 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
               >
                 <Send className="w-3.5 h-3.5" />
               </button>
-            ) : aiState === "thinking" || aiState === "answering" ? (
+            ) : currentMessage?.isStreaming ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
