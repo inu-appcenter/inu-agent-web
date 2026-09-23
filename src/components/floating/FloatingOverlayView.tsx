@@ -1,15 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkBreaks from "remark-breaks";
+import React, { useState, useRef } from "react";
 import {
   Mic,
-  RotateCcw,
-  ThumbsDown,
-  ThumbsUp,
-  Copy,
-  Share2,
-  Check,
   Send,
   X,
   Maximize2,
@@ -18,7 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { AIState, ChatMessage } from "../../types/agent";
-import { CardRenderer } from "../cards/CardRenderer";
+import { MessageBubble } from "../chat/MessageBubble";
 import chatbotLogo from "../../assets/chatbot-logo.svg";
 
 interface FloatingOverlayViewProps {
@@ -47,8 +38,6 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
   onRetry,
 }) => {
   const [inputText, setInputText] = useState("");
-  const [isCopied, setIsCopied] = useState(false);
-  const [liked, setLiked] = useState<boolean | null>(null);
   const [isTextInputActive, setIsTextInputActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -124,40 +113,6 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
     setAiState("thinking");
     onSendMessage(text);
   };
-
-  const handleCopy = async () => {
-    if (!currentMessage?.content) return;
-    try {
-      await navigator.clipboard.writeText(currentMessage.content);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.warn("Copy failed:", err);
-    }
-  };
-
-  const handleShare = async () => {
-    if (!currentMessage?.content) return;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "인천대학교 챗불이 AI 답변",
-          text: currentMessage.content,
-        });
-      } catch {}
-    } else {
-      handleCopy();
-    }
-  };
-
-  // 스트리밍 중 스크롤 오토스크롤
-  useEffect(() => {
-    if (aiState === "answering" || aiState === "expanded") {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-      }
-    }
-  }, [currentMessage?.content, currentMessage?.cards, aiState]);
 
   if (aiState === "closed") {
     return null;
@@ -239,20 +194,20 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
         </div>
       )}
 
-      {/* 2. Answering & Expanded 상태: 본문 출력 카드 (라이트 글래스) */}
-      {isAnsweringOrExpanded && (
+      {/* 2. Answering & Expanded 상태: Full 화면과 동일한 MessageBubble 공용 컴포넌트 렌더링 카드 */}
+      {isAnsweringOrExpanded && currentMessage && (
         <div
-          className={`w-full max-w-xl mx-auto flex flex-col pointer-events-auto bg-[#f8fafe]/95 backdrop-blur-3xl border border-white/90 shadow-[0_16px_48px_rgba(0,30,90,0.14)] text-slate-900 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`relative z-10 w-full max-w-xl mx-auto flex flex-col pointer-events-auto bg-[#f8fafe]/95 backdrop-blur-3xl border border-white/90 shadow-[0_16px_48px_rgba(0,30,90,0.14)] text-slate-900 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             isExpanded
               ? "h-full rounded-none border-none pb-safe"
-              : "rounded-[32px] max-h-[calc(100vh-120px)] mb-3 overflow-hidden"
+              : "rounded-[32px] max-h-[calc(82dvh-90px)] mb-3 overflow-hidden"
           }`}
           style={{
             willChange: "height, transform",
           }}
         >
-          {/* 상단 드래그 핸들 & 컨트롤 바 */}
-          <div className="relative flex items-center justify-between px-5 pt-3 pb-2 border-b border-black/5 shrink-0">
+          {/* 상단 드래그 핸들 & 컨트롤 헤더 */}
+          <div className="relative flex items-center justify-between px-5 pt-3 pb-2 border-b border-black/5 shrink-0 bg-white/70 backdrop-blur-md z-30">
             {/* 상단 중앙 미니 핸들 바 */}
             <div
               onClick={isExpanded ? onCollapse : onExpand}
@@ -260,7 +215,7 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
               title={isExpanded ? "아래로 접기" : "전체화면으로 확장"}
             />
 
-            {/* 좌측: 타이틀 (원형 배경 없이 순수 로고) */}
+            {/* 좌측: 타이틀 */}
             <div className="flex items-center gap-2 pt-2">
               <img src={chatbotLogo} alt="챗불이" className="w-5 h-5 object-contain" />
               <span className="text-xs font-semibold tracking-tight text-slate-800">
@@ -297,118 +252,54 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
             </div>
           </div>
 
-          {/* 본문 스트리밍 및 출력 영역 */}
+          {/* 본문 스크롤 영역 (사용자 질문 상단 고정 + 풀화면 MessageBubble 공용 렌더러) */}
           <div
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto px-5 py-3.5 space-y-3 select-text text-sm leading-relaxed text-slate-800"
+            className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 space-y-3 select-text text-sm leading-relaxed text-slate-800 custom-scrollbar"
           >
-            {/* 사용자 질문 리마인드 */}
+            {/* 사용자 질문 메시지 상단 고정 헤더 */}
             {recognizedText && (
-              <div className="flex justify-end mb-2">
-                <div className="max-w-[85%] px-3.5 py-2 rounded-2xl bg-blue-50 border border-blue-200/60 text-blue-900 text-xs sm:text-sm font-medium">
-                  {recognizedText}
+              <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-[#f8fafe]/95 backdrop-blur-md border-b border-slate-200/60 mb-2 shadow-xs">
+                <div className="flex items-start gap-2 max-w-full">
+                  <span className="text-[11px] font-semibold text-blue-600 shrink-0 mt-0.5">질문:</span>
+                  <p className="text-xs sm:text-sm font-medium text-slate-900 break-words line-clamp-2">
+                    {recognizedText}
+                  </p>
                 </div>
               </div>
             )}
 
-            {/* 마크다운 답변 텍스트 */}
-            {currentMessage?.content ? (
-              <div className="chat-markdown prose-slate">
-                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
-                  {currentMessage.content}
-                </ReactMarkdown>
-                {currentMessage.isStreaming && (
-                  <span className="inline-block w-1.5 h-4 bg-blue-600 animate-pulse ml-1 align-middle" />
-                )}
-              </div>
-            ) : currentMessage?.isStreaming ? (
-              <div className="flex items-center gap-2 text-slate-500 text-xs py-2">
-                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                <span>답변을 생성하고 있습니다...</span>
-              </div>
-            ) : null}
-
-            {/* SDUI 제너레이티브 카드 렌더러 */}
-            {currentMessage?.cards && currentMessage.cards.length > 0 && (
-              <div className="pt-2">
-                <CardRenderer
-                  cards={currentMessage.cards}
-                  onConfirmAction={(payload) => {
-                    if (payload?.roomName) {
-                      onSendMessage(
-                        `${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정을 진행해줘`
-                      );
+            {/* 풀화면과 100% 동일한 MessageBubble 컴포넌트 렌더링 (LaTeX, Markdown, SDUI Card, 칩 클릭 등) */}
+            <div className="w-full">
+              <MessageBubble
+                message={currentMessage}
+                lastUserQuery={recognizedText}
+                onRetry={(q) => {
+                  if (onRetry) {
+                    onRetry();
+                  } else {
+                    const queryToSend = q || recognizedText;
+                    if (queryToSend) {
+                      onSendMessage(queryToSend);
                     }
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* 하단 5개 액션 아이콘 툴바 (재질문, 싫어요, 좋아요, 복사, 공유) */}
-          <div className="flex items-center justify-between px-5 py-2.5 border-t border-black/5 bg-black/[0.02] shrink-0">
-            <div className="flex items-center gap-1 sm:gap-2">
-              <button
-                onClick={onRetry}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-slate-600 hover:text-slate-900 hover:bg-black/5 active:scale-95 transition-all"
-                title="다시 답변 요청"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-[11px]">재질문</span>
-              </button>
-              <button
-                onClick={() => setLiked(liked === false ? null : false)}
-                className={`p-1.5 rounded-lg text-xs transition-all active:scale-95 ${
-                  liked === false
-                    ? "text-red-500 bg-red-50"
-                    : "text-slate-400 hover:text-slate-700 hover:bg-black/5"
-                }`}
-                title="답변이 마음에 들지 않아요"
-              >
-                <ThumbsDown className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setLiked(liked === true ? null : true)}
-                className={`p-1.5 rounded-lg text-xs transition-all active:scale-95 ${
-                  liked === true
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-slate-400 hover:text-slate-700 hover:bg-black/5"
-                }`}
-                title="답변이 마음에 들어요"
-              >
-                <ThumbsUp className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1 sm:gap-2">
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-slate-600 hover:text-slate-900 hover:bg-black/5 active:scale-95 transition-all"
-                title="답변 복사"
-              >
-                {isCopied ? (
-                  <Check className="w-3.5 h-3.5 text-green-600" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5" />
-                )}
-                <span className="hidden sm:inline text-[11px]">
-                  {isCopied ? "복사됨" : "복사"}
-                </span>
-              </button>
-              <button
-                onClick={handleShare}
-                className="p-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-700 hover:bg-black/5 active:scale-95 transition-all"
-                title="공유하기"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-              </button>
+                  }
+                }}
+                onChipClick={(chip) => onSendMessage(chip)}
+                onConfirmAction={(payload) => {
+                  if (payload?.roomName) {
+                    onSendMessage(
+                      `${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정 신청을 진행해줘`
+                    );
+                  }
+                }}
+              />
             </div>
           </div>
         </div>
       )}
 
       {/* 3. Floating Capsule (하단 도킹 순백색 알약 캡슐) */}
-      <div className="w-full max-w-xl mx-auto pointer-events-auto relative">
+      <div className="w-full max-w-xl mx-auto pointer-events-auto relative z-20">
         <div
           onClick={handleCapsuleClick}
           className="relative flex items-center justify-between px-4 py-2.5 rounded-full bg-white/95 border border-white/90 backdrop-blur-2xl shadow-[0_8px_28px_rgba(0,30,80,0.12)] text-slate-800 cursor-pointer transition-all duration-300 hover:shadow-[0_12px_36px_rgba(0,30,80,0.16)] active:scale-[0.99]"
@@ -446,7 +337,7 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
             )}
           </div>
 
-          {/* 우측: 전송 버튼 또는 정지 버튼 또는 마이크 아이콘 (세로바 애니메이션 완전 제거) */}
+          {/* 우측: 전송 버튼 또는 정지 버튼 또는 마이크 아이콘 */}
           <div className="flex items-center gap-2 shrink-0">
             {isTextInputActive ? (
               <button
