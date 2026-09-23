@@ -250,7 +250,7 @@ export default function App() {
           onSendMessage={sendMessage}
           isLoading={isLoading}
           onStopGeneration={stopGeneration}
-          placeholder="인천대학교 캠퍼스 생활에 대해 무엇이든 물어보세요!"
+          placeholder="챗불이에게 물어보기"
         />
       </main>
     </div>

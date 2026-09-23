@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import {
   Mic,
   Send,
@@ -37,10 +37,21 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
   onRetry,
 }) => {
   const [inputText, setInputText] = useState("");
-  const [isTextInputActive, setIsTextInputActive] = useState(false);
+  const [isTextInputActive, setIsTextInputActive] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevMsgLengthRef = useRef(messages.length);
+
+  // 에이전트 입력창이 열리거나 답변 스트리밍이 완료되었을 때 입력창 자동 포커스 (모바일 가상 키보드 즉시 호출)
+  useEffect(() => {
+    if (aiState !== "closed" && !currentMessage?.isStreaming && aiState !== "thinking") {
+      setIsTextInputActive(true);
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [aiState, currentMessage?.isStreaming]);
 
   // 새 메시지가 추가되거나 질문 전송 시: 마지막 사용자 질문으로 instant 스크롤 고정
   useLayoutEffect(() => {
@@ -336,19 +347,19 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="궁금한 내용을 입력하세요..."
-                  className="w-full bg-transparent border-none outline-none text-sm text-slate-900 placeholder-slate-400"
+                  placeholder="챗불이에게 물어보기"
+                  className="w-full bg-transparent border-none outline-none text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-semibold"
                   autoFocus
                 />
               </form>
             ) : (
               <div className="flex flex-col min-w-0">
-                <span className="text-[14.5px] font-medium tracking-tight truncate text-slate-800">
-                  {aiState === "listening" && "인천대학교 캠퍼스에 대해 무엇이든 물어보세요"}
+                <span className="text-[14px] font-semibold tracking-tight truncate text-slate-800">
+                  {aiState === "listening" && "챗불이에게 물어보기"}
                   {aiState === "recognized" && (recognizedText || "인식 완료")}
                   {aiState === "thinking" && "생각하는 중..."}
-                  {aiState === "answering" && (currentMessage?.isStreaming ? "답변 중..." : "인천대학교 캠퍼스에 대해 무엇이든 물어보세요")}
-                  {aiState === "expanded" && (currentMessage?.isStreaming ? "답변 중..." : "질문을 추가로 입력하세요")}
+                  {aiState === "answering" && (currentMessage?.isStreaming ? "답변 중..." : "챗불이에게 물어보기")}
+                  {aiState === "expanded" && (currentMessage?.isStreaming ? "답변 중..." : "챗불이에게 물어보기")}
                 </span>
               </div>
             )}
