@@ -122,7 +122,9 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
 
   const handleMessageSubmit = (text: string) => {
     setRecognizedText(text);
-    setAiState("answering");
+    if (aiState !== "expanded") {
+      setAiState("answering");
+    }
     onSendMessage(text);
   };
 
