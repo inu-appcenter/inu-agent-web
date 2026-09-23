@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useLayoutEffect } from "react";
 import {
   Mic,
   Send,
@@ -15,6 +15,7 @@ import chatbotLogo from "../../assets/chatbot-logo.svg";
 interface FloatingOverlayViewProps {
   aiState: AIState;
   setAiState: (state: AIState) => void;
+  messages: ChatMessage[];
   currentMessage?: ChatMessage;
   recognizedText: string;
   setRecognizedText: (text: string) => void;
@@ -28,6 +29,7 @@ interface FloatingOverlayViewProps {
 export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
   aiState,
   setAiState,
+  messages,
   currentMessage,
   recognizedText,
   setRecognizedText,
@@ -41,6 +43,27 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
   const [isTextInputActive, setIsTextInputActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prevMsgLengthRef = useRef(messages.length);
+
+  // 새 메시지가 추가되거나 질문 전송 시: 마지막 사용자 질문으로 instant 스크롤 고정
+  useLayoutEffect(() => {
+    if (messages.length > prevMsgLengthRef.current) {
+      prevMsgLengthRef.current = messages.length;
+
+      const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+      if (lastUserMsg && scrollContainerRef.current) {
+        const container = scrollContainerRef.current;
+        const targetEl = document.getElementById(`floating-msg-${lastUserMsg.id}`);
+        if (targetEl) {
+          const containerRect = container.getBoundingClientRect();
+          const targetRect = targetEl.getBoundingClientRect();
+          const offset = targetRect.top - containerRect.top;
+          container.scrollTop = Math.max(0, container.scrollTop + offset - 8);
+        }
+      }
+    }
+    prevMsgLengthRef.current = messages.length;
+  }, [messages.length]);
 
   // 음성 인식 시작 (지원 시)
   const startSpeechRecognition = () => {
@@ -194,8 +217,8 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
         </div>
       )}
 
-      {/* 2. Answering & Expanded 상태: Full 화면과 동일한 MessageBubble 공용 컴포넌트 렌더링 카드 */}
-      {isAnsweringOrExpanded && currentMessage && (
+      {/* 2. Answering & Expanded 상태: Full 버전의 채팅 화면을 그대로 공용 활용 */}
+      {isAnsweringOrExpanded && messages.length > 0 && (
         <div
           className={`relative z-10 w-full max-w-xl mx-auto flex flex-col pointer-events-auto bg-[#f8fafe]/95 backdrop-blur-3xl border border-white/90 shadow-[0_16px_48px_rgba(0,30,90,0.14)] text-slate-900 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             isExpanded
@@ -252,48 +275,45 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
             </div>
           </div>
 
-          {/* 본문 스크롤 영역 (사용자 질문 상단 고정 + 풀화면 MessageBubble 공용 렌더러) */}
+          {/* 본문 스크롤 영역: Full Version의 메시지 목록을 100% 동일하게 렌더링 */}
           <div
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 space-y-3 select-text text-sm leading-relaxed text-slate-800 custom-scrollbar"
+            className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 space-y-4 select-text text-sm leading-relaxed text-slate-800 custom-scrollbar"
           >
-            {/* 사용자 질문 메시지 상단 고정 헤더 */}
-            {recognizedText && (
-              <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-[#f8fafe]/95 backdrop-blur-md border-b border-slate-200/60 mb-2 shadow-xs">
-                <div className="flex items-start gap-2 max-w-full">
-                  <span className="text-[11px] font-semibold text-blue-600 shrink-0 mt-0.5">질문:</span>
-                  <p className="text-xs sm:text-sm font-medium text-slate-900 break-words line-clamp-2">
-                    {recognizedText}
-                  </p>
-                </div>
-              </div>
-            )}
+            {messages.map((msg, idx) => {
+              const prevUserMsg = messages
+                .slice(0, idx)
+                .reverse()
+                .find((m) => m.role === "user");
+              const lastUserQuery = prevUserMsg?.content;
 
-            {/* 풀화면과 100% 동일한 MessageBubble 컴포넌트 렌더링 (LaTeX, Markdown, SDUI Card, 칩 클릭 등) */}
-            <div className="w-full">
-              <MessageBubble
-                message={currentMessage}
-                lastUserQuery={recognizedText}
-                onRetry={(q) => {
-                  if (onRetry) {
-                    onRetry();
-                  } else {
-                    const queryToSend = q || recognizedText;
-                    if (queryToSend) {
-                      onSendMessage(queryToSend);
-                    }
-                  }
-                }}
-                onChipClick={(chip) => onSendMessage(chip)}
-                onConfirmAction={(payload) => {
-                  if (payload?.roomName) {
-                    onSendMessage(
-                      `${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정 신청을 진행해줘`
-                    );
-                  }
-                }}
-              />
-            </div>
+              return (
+                <div key={msg.id} id={`floating-msg-${msg.id}`} className="w-full">
+                  <MessageBubble
+                    message={msg}
+                    lastUserQuery={lastUserQuery}
+                    onRetry={(q) => {
+                      if (onRetry) {
+                        onRetry();
+                      } else {
+                        const queryToSend = q || lastUserQuery;
+                        if (queryToSend) {
+                          onSendMessage(queryToSend);
+                        }
+                      }
+                    }}
+                    onChipClick={(chip) => onSendMessage(chip)}
+                    onConfirmAction={(payload) => {
+                      if (payload?.roomName) {
+                        onSendMessage(
+                          `${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정 신청을 진행해줘`
+                        );
+                      }
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

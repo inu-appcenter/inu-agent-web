@@ -128,6 +128,7 @@ export default function App() {
         <FloatingOverlayView
           aiState={aiState}
           setAiState={setAiState}
+          messages={currentRoom.messages}
           currentMessage={lastAssistantMessage}
           recognizedText={recognizedText || lastUserMessage?.content || ""}
           setRecognizedText={setRecognizedText}
