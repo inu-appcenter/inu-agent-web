@@ -2,10 +2,7 @@ import React, { useState, useRef, useLayoutEffect } from "react";
 import {
   Mic,
   Send,
-  X,
-  Maximize2,
   Square,
-  ChevronDown,
   Loader2,
 } from "lucide-react";
 import { AIState, ChatMessage } from "../../types/agent";
@@ -229,50 +226,13 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
             willChange: "height, transform",
           }}
         >
-          {/* 상단 드래그 핸들 & 컨트롤 헤더 */}
-          <div className="relative flex items-center justify-between px-5 pt-3 pb-2 border-b border-black/5 shrink-0 bg-white/70 backdrop-blur-md z-30">
-            {/* 상단 중앙 미니 핸들 바 */}
-            <div
-              onClick={isExpanded ? onCollapse : onExpand}
-              className="absolute left-1/2 -translate-x-1/2 top-2.5 w-10 h-1.5 rounded-full bg-slate-400/40 cursor-pointer hover:bg-slate-500/60 active:scale-95 transition-all"
-              title={isExpanded ? "아래로 접기" : "전체화면으로 확장"}
-            />
-
-            {/* 좌측: 타이틀 */}
-            <div className="flex items-center gap-2 pt-2">
-              <img src={chatbotLogo} alt="챗불이" className="w-5 h-5 object-contain" />
-              <span className="text-xs font-semibold tracking-tight text-slate-800">
-                챗불이 AI
-              </span>
-            </div>
-
-            {/* 우측: 확장/축소 및 닫기 버튼 */}
-            <div className="flex items-center gap-1 pt-2">
-              {isExpanded ? (
-                <button
-                  onClick={onCollapse}
-                  className="p-1.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-black/5 active:scale-95 transition-all"
-                  title="바텀시트로 축소"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-              ) : (
-                <button
-                  onClick={onExpand}
-                  className="p-1.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-black/5 active:scale-95 transition-all"
-                  title="전체화면으로 확장"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-black/5 active:scale-95 transition-all"
-                title="닫기"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+          {/* 순수 바텀시트 드래그 핸들 */}
+          <div
+            onClick={isExpanded ? onCollapse : onExpand}
+            className="w-full pt-3 pb-2 flex items-center justify-center cursor-pointer shrink-0 z-30 touch-none select-none"
+            title={isExpanded ? "아래로 접기" : "전체화면으로 확장"}
+          >
+            <div className="w-10 h-1.5 rounded-full bg-slate-300/80 hover:bg-slate-400 active:scale-95 transition-all" />
           </div>
 
           {/* 본문 스크롤 영역: Full Version의 메시지 목록을 100% 동일하게 렌더링 */}
