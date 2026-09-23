@@ -12,19 +12,27 @@ import {
   Bell,
   Clock,
   Users,
+  Smartphone,
+  RotateCcw,
+  ShieldCheck,
 } from "lucide-react";
-import { handleAppNavigation } from "../../utils/navigation";
+import { handleAppNavigation, isMobileAppEnvironment } from "../../utils/navigation";
+import { openIntipAppOrStore } from "../../utils/appLauncher";
 
 interface Props {
   data: ComponentCardData;
   onAction?: (actionId: string) => void;
   onConfirmAction?: (payload: Record<string, any>) => void;
+  onRetry?: (query?: string) => void;
+  lastUserQuery?: string;
 }
 
 export const ComponentCard: React.FC<Props> = ({
   data,
   onAction,
   onConfirmAction,
+  onRetry,
+  lastUserQuery,
 }) => {
   const type = data.type?.toUpperCase() || "";
   const cardData = data.data || {};
@@ -592,21 +600,95 @@ export const ComponentCard: React.FC<Props> = ({
 
   // 5. 포털 계정 연동 안내 카드 (PORTAL_AUTH_REQUIRED / LMS_AUTH_REQUIRED 공통)
   if (type === "PORTAL_AUTH_REQUIRED" || type === "LMS_AUTH_REQUIRED") {
-    const handleOpenModal = () => {
+    const isApp = isMobileAppEnvironment(cardData.clientContext);
+
+    const handleOpenModalOrPage = () => {
       // 1) 모바일 네이티브 브릿지 (앱 직송)
       if ((window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(
+          JSON.stringify({
+            type: "navigateTo",
+            payload: { path: "/mypage/portal", url: "/mypage/portal" },
+          })
+        );
         (window as any).ReactNativeWebView.postMessage(
           JSON.stringify({ type: "openPortalAccountModal" })
         );
       }
       // 2) 부모창 iframe 통신 (inu-portal-web)
       if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: "INTIP_NAVIGATE",
+            url: "/mypage/portal",
+          },
+          "*"
+        );
         window.parent.postMessage({ type: "OPEN_PORTAL_ACCOUNT_MODAL" }, "*");
       }
-      // 3) 자체 창 이벤트
+      // 3) 자체 내비게이션 및 창 이벤트
+      handleAppNavigation("/mypage/portal");
       window.dispatchEvent(new CustomEvent("openPortalAccountModal"));
     };
 
+    // 5-A. 모바일 앱 환경이 아닌 경우 (Non-App / Web Browser)
+    if (!isApp) {
+      return (
+        <div className="w-full bg-white rounded-2xl border border-blue-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div className="flex flex-col items-center text-center pb-3 border-b border-slate-100">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#0061ff] flex items-center justify-center mb-2.5 shadow-2xs">
+              <Smartphone className="w-6 h-6 stroke-[2]" />
+            </div>
+            <div className="font-bold text-slate-800 text-base md:text-lg mb-1">
+              INTIP 모바일 앱 전용 기능이에요
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed max-w-md">
+              포털 계정 연동은 기기 보안 저장소(KeyStore)를 이용하므로 INTIP 모바일 앱 환경에서만 등록하고 이용할 수 있어요.
+            </p>
+          </div>
+
+          <div className="my-3.5 p-3.5 bg-slate-50/80 rounded-xl border border-slate-100 text-left">
+            <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-blue-600" />
+              <span>연동 시 이용 가능한 기능</span>
+            </div>
+            <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside pl-0.5">
+              <li><strong className="text-slate-700">기본 학적 정보</strong> (취득 학점, 성적, 학적 상태를 조회해요)</li>
+              <li><strong className="text-slate-700">이러닝 LMS</strong> (과제 마감 알림과 수강 강좌를 확인해요)</li>
+              <li><strong className="text-slate-700">학산도서관</strong> (열람실 좌석 배정 및 스터디룸을 예약해요)</li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => openIntipAppOrStore("mypage/portal")}
+              className="w-full py-2.5 px-4 bg-[#0061ff] hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>앱 열기 및 설치</span>
+            </button>
+
+            {onRetry && (
+              <button
+                type="button"
+                onClick={() => onRetry(lastUserQuery)}
+                className="w-full py-2 px-4 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                <span>연동 완료 후 다시 질문하기</span>
+              </button>
+            )}
+          </div>
+
+          <div className="text-[11px] text-slate-400 text-center mt-2.5">
+            이 폰에서 직접 작업이 수행돼요.
+          </div>
+        </div>
+      );
+    }
+
+    // 5-B. 모바일 앱 환경인 경우 (App Environment & Not Linked)
     return (
       <div className="w-full bg-white rounded-2xl border border-rose-100 shadow-sm p-5 hover:shadow-md transition-shadow">
         <div className="flex items-start gap-3">
@@ -623,15 +705,26 @@ export const ComponentCard: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="pt-3 mt-3 border-t border-slate-100 flex justify-end">
+        <div className="flex flex-col gap-2 pt-3 mt-3 border-t border-slate-100">
           <button
             type="button"
-            onClick={handleOpenModal}
-            className="w-full py-2.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+            onClick={handleOpenModalOrPage}
+            className="w-full py-2.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
           >
             <KeyRound className="w-4 h-4" />
             <span>포털 계정 연동하기</span>
           </button>
+
+          {onRetry && (
+            <button
+              type="button"
+              onClick={() => onRetry(lastUserQuery)}
+              className="w-full py-2 px-4 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
+              <span>연동 완료 후 다시 질문하기</span>
+            </button>
+          )}
         </div>
       </div>
     );

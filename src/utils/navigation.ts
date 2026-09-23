@@ -1,9 +1,18 @@
 /**
  * Handles navigation inside INTIP Web (iframe parent) or React Native WebView.
  */
+
 /**
- * Handles navigation inside INTIP Web (iframe parent) or React Native WebView.
+ * 모바일 앱(React Native) 웹뷰 환경 또는 앱 컨텍스트 여부 확인
  */
+export function isMobileAppEnvironment(clientContext?: Record<string, any>): boolean {
+  if (typeof window === "undefined") return false;
+  if ((window as any).ReactNativeWebView) return true;
+  if (clientContext?.isApp === true) return true;
+  if (new URLSearchParams(window.location.search).get("isApp") === "true") return true;
+  return false;
+}
+
 export function handleAppNavigation(url?: string) {
   if (!url) return;
 

@@ -10,9 +10,17 @@ interface Props {
   cards?: GenerativeCard[];
   onAction?: (actionId: string) => void;
   onConfirmAction?: (payload: Record<string, any>) => void;
+  onRetry?: (query?: string) => void;
+  lastUserQuery?: string;
 }
 
-export const CardRenderer: React.FC<Props> = ({ cards, onAction, onConfirmAction }) => {
+export const CardRenderer: React.FC<Props> = ({
+  cards,
+  onAction,
+  onConfirmAction,
+  onRetry,
+  lastUserQuery,
+}) => {
   if (!cards || cards.length === 0) return null;
 
   return (
@@ -40,6 +48,8 @@ export const CardRenderer: React.FC<Props> = ({ cards, onAction, onConfirmAction
                 data={card}
                 onAction={onAction}
                 onConfirmAction={onConfirmAction}
+                onRetry={onRetry}
+                lastUserQuery={lastUserQuery}
               />
             );
           default:

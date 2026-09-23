@@ -152,18 +152,33 @@ export default function App() {
             </div>
           ) : (
             <div className="w-full max-w-3xl flex flex-col items-center">
-              {currentRoom.messages.map((msg) => (
-                <MessageBubble
-                  key={msg.id}
-                  message={msg}
-                  onChipClick={(chip) => sendMessage(chip)}
-                  onConfirmAction={(payload) => {
-                    if (payload?.roomName) {
-                      sendMessage(`${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정 신청을 진행해줘`);
-                    }
-                  }}
-                />
-              ))}
+              {currentRoom.messages.map((msg, idx) => {
+                const prevUserMsg = currentRoom.messages
+                  .slice(0, idx)
+                  .reverse()
+                  .find((m) => m.role === "user");
+                const lastUserQuery = prevUserMsg?.content;
+
+                return (
+                  <MessageBubble
+                    key={msg.id}
+                    message={msg}
+                    lastUserQuery={lastUserQuery}
+                    onRetry={(q) => {
+                      const queryToSend = q || lastUserQuery;
+                      if (queryToSend) {
+                        sendMessage(queryToSend);
+                      }
+                    }}
+                    onChipClick={(chip) => sendMessage(chip)}
+                    onConfirmAction={(payload) => {
+                      if (payload?.roomName) {
+                        sendMessage(`${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정 신청을 진행해줘`);
+                      }
+                    }}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

@@ -26,6 +26,8 @@ interface MessageBubbleProps {
   onChipClick?: (chipText: string) => void;
   onAction?: (actionId: string) => void;
   onConfirmAction?: (payload: Record<string, any>) => void;
+  onRetry?: (query?: string) => void;
+  lastUserQuery?: string;
 }
 
 /**
@@ -251,6 +253,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   onChipClick,
   onAction,
   onConfirmAction,
+  onRetry,
+  lastUserQuery,
 }) => {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
@@ -533,6 +537,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   cards={message.cards}
                   onAction={onAction}
                   onConfirmAction={onConfirmAction}
+                  onRetry={onRetry}
+                  lastUserQuery={lastUserQuery}
                 />
               </div>
             )}

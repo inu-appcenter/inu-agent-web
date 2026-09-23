@@ -220,8 +220,16 @@ export function useAgentStream() {
       } catch {}
     };
 
+    const handleFocusOrVisible = () => {
+      if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "GET_CLIENT_CONTEXT" }, "*");
+      }
+    };
+
     window.addEventListener("intipAgentResult", handleCustomEvent);
     window.addEventListener("message", handleMessageEvent);
+    window.addEventListener("focus", handleFocusOrVisible);
+    document.addEventListener("visibilitychange", handleFocusOrVisible);
 
     // If embedded inside an iframe (e.g. inu-portal-web AgentChatModal), request initial client context
     if (typeof window !== "undefined" && window.parent && window.parent !== window) {
@@ -231,6 +239,8 @@ export function useAgentStream() {
     return () => {
       window.removeEventListener("intipAgentResult", handleCustomEvent);
       window.removeEventListener("message", handleMessageEvent);
+      window.removeEventListener("focus", handleFocusOrVisible);
+      document.removeEventListener("visibilitychange", handleFocusOrVisible);
     };
   }, [currentRoomId]);
 
