@@ -342,7 +342,12 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
             <img
               src={chatbotLogo}
               alt="AI"
-              className="w-6 h-6 object-contain shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onExpand();
+              }}
+              className="w-6 h-6 object-contain shrink-0 cursor-pointer active:scale-90 transition-transform"
+              title="전체화면으로 확장"
             />
 
             {isTextInputActive ? (
