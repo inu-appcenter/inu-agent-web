@@ -76,10 +76,6 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
     prevMsgLengthRef.current = messages.length;
   }, [messages.length]);
 
-  if (aiState === "closed") {
-    return null;
-  }
-
   const isExpanded = aiState === "expanded";
   const isAnsweringOrExpanded = aiState === "answering" || aiState === "expanded" || aiState === "thinking";
   const isGenerating = Boolean(currentMessage?.isStreaming || aiState === "thinking");

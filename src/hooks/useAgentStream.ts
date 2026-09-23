@@ -255,15 +255,17 @@ export function useAgentStream() {
           if (payload.action === "TRIGGER_OPEN") {
             createNewRoom();
             setRecognizedText("");
-            setAiState("listening");
+            setAiStateState("listening");
           } else if (payload.action === "FORCE_CLOSE") {
-            setAiState("closed");
+            setAiStateState("closed");
             createNewRoom();
             setRecognizedText("");
           } else if (payload.action === "SET_EXPANDED") {
-            setAiState("expanded");
+            setAiStateState("expanded");
+            notifyParentStateChange("expanded");
           } else if (payload.action === "SET_HALF") {
-            setAiState("answering");
+            setAiStateState("answering");
+            notifyParentStateChange("answering");
           }
           return;
         }
