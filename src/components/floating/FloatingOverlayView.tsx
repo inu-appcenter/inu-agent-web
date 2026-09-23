@@ -3,7 +3,6 @@ import {
   Mic,
   Send,
   Square,
-  Loader2,
   X,
 } from "lucide-react";
 import { AIState, ChatMessage } from "../../types/agent";
@@ -138,7 +137,7 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
     setInputText("");
     setIsTextInputActive(false);
     setRecognizedText(text);
-    setAiState("thinking");
+    setAiState("answering");
     onSendMessage(text);
   };
 
@@ -147,19 +146,7 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
   }
 
   const isExpanded = aiState === "expanded";
-  const isAnsweringOrExpanded = aiState === "answering" || aiState === "expanded";
-
-  // Thinking 상태일 때 표시할 타임라인 스텝 목록 (라이트 모드 One UI 스타일)
-  const thinkingTimeline =
-    currentMessage?.timeline && currentMessage.timeline.length > 0
-      ? currentMessage.timeline
-      : [
-          { id: "1", text: "AI로 답변을 생성하고 있습니다", state: "completed" },
-          ...(recognizedText
-            ? [{ id: "2", text: `'${recognizedText}' 관련 정보 검색 중`, state: "completed" }]
-            : []),
-          { id: "3", text: "지식을 종합하고 답변을 정리하는 중입니다", state: "running" },
-        ];
+  const isAnsweringOrExpanded = aiState === "answering" || aiState === "expanded" || aiState === "thinking";
 
   const dragStartYRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
@@ -266,44 +253,7 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
         />
       )}
 
-      {/* 1. Thinking 상태: 뒤쪽 라이트 글래스 확장 카드 */}
-      {aiState === "thinking" && (
-        <div className="relative z-10 w-full max-w-xl mx-auto mb-3 pointer-events-auto rounded-[32px] bg-[#f0f4fa]/95 backdrop-blur-3xl border border-white/90 shadow-[0_12px_36px_rgba(0,40,120,0.12)] p-5 animate-fade-in">
-          {/* 수직 타임라인 진행 스텝 */}
-          <div className="space-y-3.5 py-1">
-            {thinkingTimeline.map((step, idx) => {
-              const isLast = idx === thinkingTimeline.length - 1;
-              const isRunning = step.state === "running" || isLast;
-              return (
-                <div key={step.id || idx} className="flex items-start gap-3">
-                  {/* 스텝 아이콘 */}
-                  <div className="relative flex flex-col items-center mt-0.5">
-                    {isRunning ? (
-                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
-                    ) : (
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-400 bg-transparent shrink-0 flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                      </div>
-                    )}
-                    {!isLast && (
-                      <div className="w-[1.5px] h-5 bg-slate-300 my-0.5 border-dashed" />
-                    )}
-                  </div>
 
-                  {/* 스텝 텍스트 */}
-                  <span
-                    className={`text-[13.5px] leading-snug tracking-tight ${
-                      isRunning ? "font-semibold text-slate-900" : "text-slate-500"
-                    }`}
-                  >
-                    {step.text}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* 2. Answering & Expanded 상태: Full 버전의 채팅 화면을 그대로 공용 활용 */}
       {isAnsweringOrExpanded && messages.length > 0 && (

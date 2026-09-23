@@ -300,7 +300,7 @@ export function useAgentStream() {
       if (!text.trim() || isLoading) return;
 
       setRecognizedText(text);
-      setAiState("thinking");
+      setAiState("answering");
 
       const userMsg: ChatMessage = {
         id: `user_${Date.now()}`,
