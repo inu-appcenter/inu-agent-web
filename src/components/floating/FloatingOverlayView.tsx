@@ -126,7 +126,10 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
   };
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -231,6 +234,6 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
         onLogoClick={onExpand}
         isFloating={true}
       />
-    </div>
+    </motion.div>
   );
 };
