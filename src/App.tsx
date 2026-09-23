@@ -214,12 +214,12 @@ export default function App() {
           onScroll={handleChatAreaScroll}
           style={{
             paddingBottom:
-              "calc(140px + var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))",
+              "calc(180px + var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))",
           }}
           className="flex-1 w-full px-4 md:px-8 pt-2 md:pt-3 flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar overflow-y-auto"
         >
           {currentRoom.messages.length === 0 ? (
-            <div className="w-full max-w-3xl flex flex-col items-center pt-2 pb-6 min-h-0">
+            <div className="w-full max-w-3xl flex flex-col items-center pt-1 pb-4 min-h-0">
               <QuickPrompts
                 onSelect={(prompt) => sendMessage(prompt)}
                 isScrolled={isPromptScrolled}

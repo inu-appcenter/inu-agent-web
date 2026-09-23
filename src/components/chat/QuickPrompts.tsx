@@ -356,7 +356,7 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect, isScrolled = false }) 
         key={`domain-detail-${selectedDomainId}`}
         className="w-full max-w-2xl mx-auto flex flex-col text-left animate-in fade-in duration-200"
       >
-        {/* 상단 고정 헤더: 스크롤해도 전혀 끌려내려오지 않고 상단에 딱 붙어있음 */}
+        {/* 상단 고정 헤더: 스크롤해도 끌려내려오지 않고 상단에 유지 */}
         <div className="flex-shrink-0 pt-1 pb-2.5">
           <div className="flex items-center gap-2.5 mb-2">
             <button
@@ -383,10 +383,10 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect, isScrolled = false }) 
           </p>
         </div>
 
-        {/* 내부 스크롤 영역: 작업 예시 카드들만 독립적으로 스크롤 */}
+        {/* 내부 스크롤 영역: 작업 예시 카드들만 독립적으로 스크롤 (모바일 입력창 겹침 방지 여백 확보) */}
         <div
           ref={scrollContainerRef}
-          className="overflow-y-auto custom-scrollbar pt-2 pb-28 pr-1 space-y-2.5 max-h-[60vh] md:max-h-[70vh]"
+          className="overflow-y-auto custom-scrollbar pt-2 pb-36 pr-1 space-y-2.5 max-h-[65vh] md:max-h-[72vh]"
         >
           <div className="flex items-center justify-between px-1 mb-1">
             <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
@@ -435,13 +435,13 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect, isScrolled = false }) 
 
   // 2. 초기 메인 도메인 카드 그리드 화면
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col justify-start md:justify-center py-1 md:py-3 px-2 text-center animate-in fade-in duration-200">
-      {/* 챗불이 환영 인사: 스크롤 시작 시 자연스럽게 Fade out 되며 상단 공간 확보, 최상단 복귀 시 Fade in */}
+    <div className="w-full max-w-2xl mx-auto flex flex-col justify-start md:justify-center py-1 md:py-2 px-2 text-center animate-in fade-in duration-200">
+      {/* 챗불이 환영 인사: 중앙 상단에 위치하며 스크롤 시 자연스럽게 Fade out, 최상단 복귀 시 Fade in */}
       <div
-        className={`shrink-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`sticky top-0 z-20 shrink-0 pt-2 md:pt-4 pb-3 md:pb-4 transition-all duration-300 ease-out ${
           isScrolled
-            ? "opacity-0 -translate-y-3 max-h-0 mb-0 scale-95 pointer-events-none overflow-hidden"
-            : "opacity-100 translate-y-0 max-h-40 mb-3.5 md:mb-6 scale-100"
+            ? "opacity-0 -translate-y-2 pointer-events-none"
+            : "opacity-100 translate-y-0 pointer-events-auto"
         }`}
       >
         <h2 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight flex items-center justify-center gap-2">
