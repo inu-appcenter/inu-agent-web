@@ -14,8 +14,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header
-      style={{ paddingTop: "var(--native-safe-area-inset-top, env(safe-area-inset-top, 0px))" }}
-      className="sticky top-0 z-30 w-full min-h-[60px] px-4 md:px-6 flex items-center justify-between border-b border-white/40 bg-white/20 backdrop-blur-md"
+      className="sticky top-0 z-30 w-full min-h-[56px] h-[56px] px-4 md:px-6 flex items-center justify-between border-b border-white/60 bg-white/40 backdrop-blur-md"
     >
       <div className="flex items-center gap-3">
         {!isSidebarOpen && (

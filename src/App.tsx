@@ -153,7 +153,7 @@ export default function App() {
       {isFloatingMode && (
         <button
           onClick={() => setAiState("closed")}
-          className="fixed top-3.5 right-3.5 z-50 p-2 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-slate-600 hover:text-slate-900 active:scale-95 transition-all cursor-pointer pointer-events-auto"
+          className="fixed top-2.5 right-3 z-50 p-2 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-slate-600 hover:text-slate-900 active:scale-95 transition-all cursor-pointer pointer-events-auto"
           title="닫기"
         >
           <X className="w-5 h-5" />
