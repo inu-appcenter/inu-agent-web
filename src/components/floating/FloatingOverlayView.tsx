@@ -180,13 +180,29 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 w-full h-full flex flex-col justify-end pointer-events-none select-none transition-all duration-300 ${
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className={`fixed inset-0 w-full h-full flex flex-col justify-end select-none transition-all duration-300 ${
         isExpanded ? "p-0" : "p-3 pb-3"
       }`}
     >
+      {/* 캡슐 및 카드 바깥 영역 터치 시 닫기 레이어 */}
+      {!isExpanded && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute inset-0 z-0 pointer-events-auto"
+        />
+      )}
+
       {/* 1. Thinking 상태: 뒤쪽 라이트 글래스 확장 카드 */}
       {aiState === "thinking" && (
-        <div className="w-full max-w-xl mx-auto mb-3 pointer-events-auto rounded-[32px] bg-[#f0f4fa]/95 backdrop-blur-3xl border border-white/90 shadow-[0_12px_36px_rgba(0,40,120,0.12)] p-5 animate-fade-in">
+        <div className="relative z-10 w-full max-w-xl mx-auto mb-3 pointer-events-auto rounded-[32px] bg-[#f0f4fa]/95 backdrop-blur-3xl border border-white/90 shadow-[0_12px_36px_rgba(0,40,120,0.12)] p-5 animate-fade-in">
           {/* 수직 타임라인 진행 스텝 */}
           <div className="space-y-3.5 py-1">
             {thinkingTimeline.map((step, idx) => {
