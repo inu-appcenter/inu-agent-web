@@ -1,10 +1,11 @@
-import { useRef, useEffect, useLayoutEffect } from "react";
+import { useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { useAgentStream } from "./hooks/useAgentStream";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
 import { QuickPrompts } from "./components/chat/QuickPrompts";
 import { MessageBubble } from "./components/chat/MessageBubble";
 import { ChatInput } from "./components/chat/ChatInput";
+import { FloatingOverlayView } from "./components/floating/FloatingOverlayView";
 import ellipse2 from "./assets/ellipse2.svg";
 
 export default function App() {
@@ -23,6 +24,10 @@ export default function App() {
     stopGeneration,
     sendMessage,
     clientTenant,
+    aiState,
+    setAiState,
+    recognizedText,
+    setRecognizedText,
   } = useAgentStream();
 
   const chatAreaRef = useRef<HTMLDivElement>(null);
@@ -100,8 +105,59 @@ export default function App() {
     if (window.innerWidth <= 768) setIsSidebarOpen(false);
   };
 
+  const isFloatingMode = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return (
+      params.get("mode") === "floating" ||
+      (typeof window !== "undefined" && window.parent && window.parent !== window)
+    );
+  }, []);
+
+  const lastAssistantMessage = useMemo(() => {
+    return [...currentRoom.messages].reverse().find((m) => m.role === "assistant");
+  }, [currentRoom.messages]);
+
+  const lastUserMessage = useMemo(() => {
+    return [...currentRoom.messages].reverse().find((m) => m.role === "user");
+  }, [currentRoom.messages]);
+
+  // 플로팅 모드이고 아직 전체화면(expanded)으로 확장되지 않은 경우 플로팅 오버레이 뷰만 렌더링
+  if (isFloatingMode && aiState !== "expanded") {
+    return (
+      <div className="fixed inset-0 w-full h-full bg-transparent overflow-hidden select-none">
+        <FloatingOverlayView
+          aiState={aiState}
+          setAiState={setAiState}
+          currentMessage={lastAssistantMessage}
+          recognizedText={recognizedText || lastUserMessage?.content || ""}
+          setRecognizedText={setRecognizedText}
+          onSendMessage={sendMessage}
+          onClose={() => setAiState("closed")}
+          onExpand={() => setAiState("expanded")}
+          onCollapse={() => setAiState("answering")}
+          onRetry={() => {
+            if (lastUserMessage?.content) {
+              sendMessage(lastUserMessage.content);
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex fixed inset-0 h-[100dvh] bg-gradient-to-br from-[#f0f0ff] via-[#f7f8ff] to-[#fdfdff] font-sans antialiased overflow-hidden select-none">
+      {/* Floating Mode일 때 Expanded 상태 컨트롤 바 */}
+      {isFloatingMode && (
+        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/20 text-white text-xs shadow-lg">
+          <div
+            onClick={() => setAiState("answering")}
+            className="w-8 h-1 bg-white/40 rounded-full cursor-pointer hover:bg-white/80 active:scale-95 transition-all"
+            title="바텀시트로 축소"
+          />
+        </div>
+      )}
+
       {/* Mobile Drawer Overlay */}
       {isSidebarOpen && (
         <div
@@ -143,7 +199,10 @@ export default function App() {
         {/* Scrollable Chat Message Area */}
         <div
           ref={chatAreaRef}
-          style={{ paddingBottom: "calc(110px + var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))" }}
+          style={{
+            paddingBottom:
+              "calc(110px + var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))",
+          }}
           className="flex-1 w-full px-4 md:px-8 pt-2 md:pt-3 flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar overflow-y-auto"
         >
           {currentRoom.messages.length === 0 ? (
@@ -173,7 +232,9 @@ export default function App() {
                     onChipClick={(chip) => sendMessage(chip)}
                     onConfirmAction={(payload) => {
                       if (payload?.roomName) {
-                        sendMessage(`${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정 신청을 진행해줘`);
+                        sendMessage(
+                          `${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정 신청을 진행해줘`
+                        );
                       }
                     }}
                   />
@@ -194,4 +255,5 @@ export default function App() {
     </div>
   );
 }
+
 

@@ -5,6 +5,7 @@ import {
   GenerativeCard,
   ClientActionInstruction,
   ClientActionResult,
+  AIState,
 } from "../types/agent";
 
 const CORE_URL = import.meta.env.VITE_AGENT_CORE_URL || "http://localhost:8000";
@@ -51,14 +52,48 @@ export function useAgentStream() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
   const [clientTenant, setClientTenant] = useState<string>("INTIP");
   const [clientContext, setClientContext] = useState<Record<string, any> | null>(null);
+  const [aiState, setAiStateState] = useState<AIState>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const initialMode = params.get("state") as AIState;
+    if (initialMode && ["closed", "listening", "recognized", "thinking", "answering", "expanded"].includes(initialMode)) {
+      return initialMode;
+    }
+    // iframe 안에 있고 mode=floating인 경우 기본적으로 listening 또는 closed로 시작
+    const isFloating = params.get("mode") === "floating";
+    return isFloating ? "listening" : "expanded";
+  });
+  const [recognizedText, setRecognizedText] = useState<string>("");
   const clientContextRef = useRef<Record<string, any> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const notifyParentStateChange = useCallback((state: AIState, text?: string) => {
+    if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+      window.parent.postMessage(
+        {
+          type: "AI_STATE_CHANGE",
+          state,
+          payload: {
+            recognizedText: text !== undefined ? text : recognizedText,
+          },
+        },
+        "*"
+      );
+    }
+  }, [recognizedText]);
+
+  const setAiState = useCallback((nextState: AIState) => {
+    setAiStateState(nextState);
+    notifyParentStateChange(nextState);
+  }, [notifyParentStateChange]);
 
   // Initialize client tenant from URL parameter e.g. ?client=UNIDORM
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const clientParam = params.get("client") || import.meta.env.VITE_DEFAULT_CLIENT || "INTIP";
     setClientTenant(clientParam.toUpperCase());
+    
+    // 초기 로드시 상태 전송
+    notifyParentStateChange(aiState);
   }, []);
 
   // Save rooms to localStorage
@@ -216,6 +251,18 @@ export function useAgentStream() {
     const handleMessageEvent = (event: MessageEvent) => {
       try {
         const payload = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        if (payload?.type === "HOST_COMMAND") {
+          if (payload.action === "TRIGGER_OPEN") {
+            setAiState("listening");
+          } else if (payload.action === "FORCE_CLOSE") {
+            setAiState("closed");
+          } else if (payload.action === "SET_EXPANDED") {
+            setAiState("expanded");
+          } else if (payload.action === "SET_HALF") {
+            setAiState("answering");
+          }
+          return;
+        }
         handleActionResult(payload);
       } catch {}
     };
@@ -247,6 +294,9 @@ export function useAgentStream() {
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isLoading) return;
+
+      setRecognizedText(text);
+      setAiState("thinking");
 
       const userMsg: ChatMessage = {
         id: `user_${Date.now()}`,
@@ -349,6 +399,13 @@ export function useAgentStream() {
         if (!response.ok || !response.body) {
           throw new Error(`서버 응답 오류 (${response.status})`);
         }
+
+        // 응답 스트림이 시작되면 answering (또는 expanded 유지) 상태로 전이
+        setAiStateState((curr) => {
+          const next = curr === "expanded" ? "expanded" : "answering";
+          notifyParentStateChange(next, text);
+          return next;
+        });
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
@@ -643,5 +700,9 @@ export function useAgentStream() {
     sendMessage,
     clientTenant,
     clientContext,
+    aiState,
+    setAiState,
+    recognizedText,
+    setRecognizedText,
   };
 }

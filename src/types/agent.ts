@@ -129,3 +129,19 @@ export interface ChatRoom {
   createdAt: number;
   messages: ChatMessage[];
 }
+
+export type AIState = 'closed' | 'listening' | 'recognized' | 'thinking' | 'answering' | 'expanded';
+
+export interface ChildToHostMessage {
+  type: 'AI_STATE_CHANGE';
+  state: AIState;
+  payload?: {
+    recognizedText?: string;
+    cardHeight?: number;
+  };
+}
+
+export interface HostToChildMessage {
+  type: 'HOST_COMMAND';
+  action: 'TRIGGER_OPEN' | 'FORCE_CLOSE' | 'SET_EXPANDED' | 'SET_HALF';
+}
