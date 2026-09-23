@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import {
   Mic,
   Send,
@@ -41,6 +41,29 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevMsgLengthRef = useRef(messages.length);
+
+  const handleRetryAction = useCallback((q?: string, lastUserQuery?: string) => {
+    if (onRetry) {
+      onRetry();
+    } else {
+      const queryToSend = q || lastUserQuery;
+      if (queryToSend) {
+        onSendMessage(queryToSend);
+      }
+    }
+  }, [onRetry, onSendMessage]);
+
+  const handleChipClickAction = useCallback((chip: string) => {
+    onSendMessage(chip);
+  }, [onSendMessage]);
+
+  const handleConfirmPayloadAction = useCallback((payload: Record<string, any>) => {
+    if (payload?.roomName) {
+      onSendMessage(
+        `${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정 신청을 진행해줘`
+      );
+    }
+  }, [onSendMessage]);
 
   // 에이전트 입력창이 열리거나 답변 스트리밍이 완료되었을 때 입력창 자동 포커스 (모바일 가상 키보드 즉시 호출)
   useEffect(() => {
@@ -296,24 +319,9 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
                   <MessageBubble
                     message={msg}
                     lastUserQuery={lastUserQuery}
-                    onRetry={(q) => {
-                      if (onRetry) {
-                        onRetry();
-                      } else {
-                        const queryToSend = q || lastUserQuery;
-                        if (queryToSend) {
-                          onSendMessage(queryToSend);
-                        }
-                      }
-                    }}
-                    onChipClick={(chip) => onSendMessage(chip)}
-                    onConfirmAction={(payload) => {
-                      if (payload?.roomName) {
-                        onSendMessage(
-                          `${payload.roomName} ${payload.seatNo ? payload.seatNo + "번 " : ""}좌석 배정 신청을 진행해줘`
-                        );
-                      }
-                    }}
+                    onRetry={(q) => handleRetryAction(q, lastUserQuery)}
+                    onChipClick={handleChipClickAction}
+                    onConfirmAction={handleConfirmPayloadAction}
                   />
                 </div>
               );

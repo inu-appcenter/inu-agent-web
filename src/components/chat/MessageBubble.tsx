@@ -191,33 +191,6 @@ const renderLinkText = (children: React.ReactNode, href?: string): React.ReactNo
   return children;
 };
 
-/**
- * 텍스트 노드를 단어 단위로 쪼개어 UNIDORM 페이드인 효과(fade-in-word class)를 적용하는 헬퍼 함수
- */
-const wrapTextWithSpans = (children: React.ReactNode): React.ReactNode => {
-  if (typeof children === "string") {
-    if (!children) return children;
-    const words = children.split(/(\s+)/);
-    return words.map((word, i) => {
-      if (word.trim() === "") {
-        return <React.Fragment key={i}>{word}</React.Fragment>;
-      }
-      return (
-        <span key={i} className="fade-in-word">
-          {word}
-        </span>
-      );
-    });
-  }
-
-  if (Array.isArray(children)) {
-    return children.map((child, index) => (
-      <React.Fragment key={index}>{wrapTextWithSpans(child)}</React.Fragment>
-    ));
-  }
-
-  return children;
-};
 
 
 /**
@@ -248,7 +221,7 @@ const getToolIcon = (category: string) => {
   }
 };
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
+const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   message,
   onChipClick,
   onAction,
@@ -399,47 +372,47 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   components={{
                     p: ({ children }) => (
                       <p className="my-1.5 leading-relaxed text-[15px] text-slate-800">
-                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                        {children}
                       </p>
                     ),
                     li: ({ children }) => (
                       <li className="leading-relaxed text-[14.5px] text-slate-800 mb-1">
-                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                        {children}
                       </li>
                     ),
                     strong: ({ children }) => (
                       <strong className="font-bold text-slate-900">
-                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                        {children}
                       </strong>
                     ),
                     em: ({ children }) => (
                       <em className="italic">
-                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                        {children}
                       </em>
                     ),
                     h1: ({ children }) => (
                       <h1 className="text-[1.25em] font-bold text-slate-900 mt-4 mb-2 first:mt-0 leading-snug">
-                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                        {children}
                       </h1>
                     ),
                     h2: ({ children }) => (
                       <h2 className="text-[1.15em] font-bold text-slate-800 mt-3.5 mb-1.5 first:mt-0 leading-snug">
-                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                        {children}
                       </h2>
                     ),
                     h3: ({ children }) => (
                       <h3 className="text-[1.05em] font-semibold text-slate-800 mt-3 mb-1.5 first:mt-0 leading-snug">
-                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                        {children}
                       </h3>
                     ),
                     h4: ({ children }) => (
                       <h4 className="text-sm font-semibold text-slate-700 mt-2.5 mb-1">
-                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                        {children}
                       </h4>
                     ),
                     blockquote: ({ children }) => (
                       <blockquote className="my-2.5 pl-3.5 py-2 border-l-[3.5px] border-[#0061ff] bg-blue-50/40 rounded-r-lg text-slate-700 text-[14px]">
-                        {message.isStreaming ? children : wrapTextWithSpans(children)}
+                        {children}
                       </blockquote>
                     ),
                     table: ({ children, ...props }) => (
@@ -515,7 +488,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                           rel="noopener noreferrer"
                           className="text-[#0061ff] underline underline-offset-2 font-medium hover:text-blue-800 break-all"
                         >
-                          {message.isStreaming ? linkContent : wrapTextWithSpans(linkContent)}
+                          {linkContent}
                         </a>
                       );
                     },
@@ -582,4 +555,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     </div>
   );
 };
+
+export const MessageBubble = React.memo(MessageBubbleComponent);
 
