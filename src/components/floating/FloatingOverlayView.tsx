@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { AIState, ChatMessage } from "../../types/agent";
 import { MessageBubble } from "../chat/MessageBubble";
 import { ChatInput } from "../chat/ChatInput";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface FloatingOverlayViewProps {
   aiState: AIState;
@@ -161,17 +162,22 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
       )}
 
       {/* 2. Answering & Expanded 상태: Full 버전의 채팅 화면을 그대로 공용 활용 */}
-      {isAnsweringOrExpanded && messages.length > 0 && (
-        <div
-          className={`relative z-10 w-full max-w-xl mx-auto flex flex-col pointer-events-auto bg-[#f8fafe]/95 backdrop-blur-3xl border border-white/90 shadow-[0_16px_48px_rgba(0,30,90,0.14)] text-slate-900 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-            isExpanded
-              ? "h-full rounded-none border-none pb-safe"
-              : "rounded-[32px] max-h-[calc(92dvh-90px)] mb-3 overflow-hidden"
-          }`}
-          style={{
-            willChange: "height, transform",
-          }}
-        >
+      <AnimatePresence>
+        {isAnsweringOrExpanded && messages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.15 } }}
+            transition={{ duration: 0.3 }}
+            className={`relative z-10 w-full max-w-xl mx-auto flex flex-col pointer-events-auto bg-[#f8fafe]/95 backdrop-blur-3xl border border-white/90 shadow-[0_16px_48px_rgba(0,30,90,0.14)] text-slate-900 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isExpanded
+                ? "h-full rounded-none border-none pb-safe"
+                : "rounded-[32px] max-h-[calc(92dvh-90px)] mb-3 overflow-hidden"
+            }`}
+            style={{
+              willChange: "height, transform, opacity",
+            }}
+          >
           {/* 바텀시트일 때만 상단 드래그 핸들 표시 (전체화면일 때는 제거) */}
           {!isExpanded && (
             <div
@@ -209,8 +215,9 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
               );
             })}
           </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 3. 공용 ChatInput 컴포넌트 (플로팅 입력창) */}
       <ChatInput
