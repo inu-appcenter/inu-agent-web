@@ -153,6 +153,42 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
           { id: "3", text: "지식을 종합하고 답변을 정리하는 중입니다", state: "running" },
         ];
 
+  const dragStartYRef = useRef<number>(0);
+  const isDraggingRef = useRef<boolean>(false);
+
+  const handleHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragStartYRef.current = e.clientY;
+    isDraggingRef.current = true;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handleHandlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+
+    const deltaY = e.clientY - dragStartYRef.current;
+    if (deltaY < -35) {
+      // 위로 드래그 -> 전체화면 확장
+      onExpand();
+    } else if (deltaY > 40) {
+      // 아래로 드래그 -> 축소 또는 닫기
+      if (isExpanded) {
+        onCollapse();
+      } else {
+        onClose();
+      }
+    } else if (Math.abs(deltaY) < 6) {
+      // 순수 탭/클릭
+      if (isExpanded) onCollapse();
+      else onExpand();
+    }
+  };
+
   return (
     <div
       onClick={(e) => {
@@ -226,11 +262,12 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
             willChange: "height, transform",
           }}
         >
-          {/* 순수 바텀시트 드래그 핸들 */}
+          {/* 순수 바텀시트 드래그 핸들 (Pointer Capture 지원) */}
           <div
-            onClick={isExpanded ? onCollapse : onExpand}
-            className="w-full pt-3 pb-2 flex items-center justify-center cursor-pointer shrink-0 z-30 touch-none select-none"
-            title={isExpanded ? "아래로 접기" : "전체화면으로 확장"}
+            onPointerDown={handleHandlePointerDown}
+            onPointerUp={handleHandlePointerUp}
+            className="w-full pt-3 pb-2 flex items-center justify-center cursor-grab active:cursor-grabbing shrink-0 z-30 touch-none select-none"
+            title={isExpanded ? "아래로 드래그하여 접기" : "위로 드래그하여 전체화면으로 확장"}
           >
             <div className="w-10 h-1.5 rounded-full bg-slate-300/80 hover:bg-slate-400 active:scale-95 transition-all" />
           </div>
