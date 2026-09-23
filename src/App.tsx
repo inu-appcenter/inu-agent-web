@@ -1,4 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useMemo } from "react";
+import { X } from "lucide-react";
 import { useAgentStream } from "./hooks/useAgentStream";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
@@ -148,15 +149,15 @@ export default function App() {
 
   return (
     <div className="flex fixed inset-0 h-[100dvh] bg-gradient-to-br from-[#f0f0ff] via-[#f7f8ff] to-[#fdfdff] font-sans antialiased overflow-hidden select-none">
-      {/* Floating Mode일 때 Expanded 상태 컨트롤 바 */}
+      {/* Floating Mode일 때 Expanded 상태 우상단 플로팅 X 버튼 */}
       {isFloatingMode && (
-        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/20 text-white text-xs shadow-lg">
-          <div
-            onClick={() => setAiState("answering")}
-            className="w-8 h-1 bg-white/40 rounded-full cursor-pointer hover:bg-white/80 active:scale-95 transition-all"
-            title="바텀시트로 축소"
-          />
-        </div>
+        <button
+          onClick={() => setAiState("closed")}
+          className="fixed top-3.5 right-3.5 z-50 p-2 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-slate-600 hover:text-slate-900 active:scale-95 transition-all cursor-pointer pointer-events-auto"
+          title="닫기"
+        >
+          <X className="w-5 h-5" />
+        </button>
       )}
 
       {/* Mobile Drawer Overlay */}

@@ -4,6 +4,7 @@ import {
   Send,
   Square,
   Loader2,
+  X,
 } from "lucide-react";
 import { AIState, ChatMessage } from "../../types/agent";
 import { MessageBubble } from "../chat/MessageBubble";
@@ -129,10 +130,6 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
     }
   };
 
-  const handleCapsuleClick = () => {
-    setIsTextInputActive(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
-  };
 
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,6 +197,39 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
     }
   };
 
+  // 캡슐만 있는 상태에서 위로 끌어올리면 전체화면으로 전환하는 핸들러
+  const capsuleStartYRef = useRef<number>(0);
+  const isCapsuleDraggingRef = useRef<boolean>(false);
+
+  const handleCapsulePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    capsuleStartYRef.current = e.clientY;
+    isCapsuleDraggingRef.current = true;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handleCapsulePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isCapsuleDraggingRef.current) return;
+    isCapsuleDraggingRef.current = false;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+
+    const deltaY = e.clientY - capsuleStartYRef.current;
+    if (deltaY < -30) {
+      // 위로 끌어 올림 -> 전체화면 확장
+      onExpand();
+    } else if (deltaY > 35) {
+      // 아래로 끌어 내림 -> 닫기
+      onClose();
+    } else {
+      // 일반 클릭 / 탭 -> 입력창 포커스
+      setIsTextInputActive(true);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  };
+
   return (
     <div
       onClick={(e) => {
@@ -211,6 +241,20 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
         isExpanded ? "p-0" : "p-3 pb-3"
       }`}
     >
+      {/* 전체화면(expanded) 모드일 때 우상단 플로팅 X 닫기 버튼 */}
+      {isExpanded && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="fixed top-3.5 right-3.5 z-50 p-2 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-slate-600 hover:text-slate-900 active:scale-95 transition-all cursor-pointer pointer-events-auto"
+          title="닫기"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      )}
+
       {/* 캡슐 및 카드 바깥 영역 터치 시 닫기 레이어 */}
       {!isExpanded && (
         <div
@@ -267,21 +311,23 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
           className={`relative z-10 w-full max-w-xl mx-auto flex flex-col pointer-events-auto bg-[#f8fafe]/95 backdrop-blur-3xl border border-white/90 shadow-[0_16px_48px_rgba(0,30,90,0.14)] text-slate-900 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             isExpanded
               ? "h-full rounded-none border-none pb-safe"
-              : "rounded-[32px] max-h-[calc(82dvh-90px)] mb-3 overflow-hidden"
+              : "rounded-[32px] max-h-[calc(92dvh-90px)] mb-3 overflow-hidden"
           }`}
           style={{
             willChange: "height, transform",
           }}
         >
-          {/* 순수 바텀시트 드래그 핸들 (Pointer Capture 지원) */}
-          <div
-            onPointerDown={handleHandlePointerDown}
-            onPointerUp={handleHandlePointerUp}
-            className="w-full pt-3 pb-2 flex items-center justify-center cursor-grab active:cursor-grabbing shrink-0 z-30 touch-none select-none"
-            title={isExpanded ? "아래로 드래그하여 접기" : "위로 드래그하여 전체화면으로 확장"}
-          >
-            <div className="w-10 h-1.5 rounded-full bg-slate-300/80 hover:bg-slate-400 active:scale-95 transition-all" />
-          </div>
+          {/* 바텀시트일 때만 상단 드래그 핸들 표시 (전체화면일 때는 제거) */}
+          {!isExpanded && (
+            <div
+              onPointerDown={handleHandlePointerDown}
+              onPointerUp={handleHandlePointerUp}
+              className="w-full pt-3 pb-2 flex items-center justify-center cursor-grab active:cursor-grabbing shrink-0 z-30 touch-none select-none"
+              title="위로 드래그하여 전체화면으로 확장"
+            >
+              <div className="w-10 h-1.5 rounded-full bg-slate-300/80 hover:bg-slate-400 active:scale-95 transition-all" />
+            </div>
+          )}
 
           {/* 본문 스크롤 영역: Full Version의 메시지 목록을 100% 동일하게 렌더링 */}
           <div
@@ -329,8 +375,9 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
       {/* 3. Floating Capsule (하단 도킹 순백색 알약 캡슐) */}
       <div className="w-full max-w-xl mx-auto pointer-events-auto relative z-20">
         <div
-          onClick={handleCapsuleClick}
-          className="relative flex items-center justify-between px-4 py-2.5 rounded-full bg-white/95 border border-white/90 backdrop-blur-2xl shadow-[0_8px_28px_rgba(0,30,80,0.12)] text-slate-800 cursor-pointer transition-all duration-300 hover:shadow-[0_12px_36px_rgba(0,30,80,0.16)] active:scale-[0.99]"
+          onPointerDown={handleCapsulePointerDown}
+          onPointerUp={handleCapsulePointerUp}
+          className="relative flex items-center justify-between px-4 py-2.5 rounded-full bg-white/95 border border-white/90 backdrop-blur-2xl shadow-[0_8px_28px_rgba(0,30,80,0.12)] text-slate-800 cursor-pointer transition-all duration-300 hover:shadow-[0_12px_36px_rgba(0,30,80,0.16)] active:scale-[0.99] touch-none"
         >
           {/* 좌측: 순수 챗불이 로고 + 상태 라벨 / 텍스트 입력창 */}
           <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
