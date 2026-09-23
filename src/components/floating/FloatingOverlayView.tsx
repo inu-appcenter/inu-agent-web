@@ -1,13 +1,8 @@
-import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
-import {
-  Mic,
-  Send,
-  Square,
-  X,
-} from "lucide-react";
+import React, { useRef, useLayoutEffect, useCallback } from "react";
+import { X } from "lucide-react";
 import { AIState, ChatMessage } from "../../types/agent";
 import { MessageBubble } from "../chat/MessageBubble";
-import chatbotLogo from "../../assets/chatbot-logo.svg";
+import { ChatInput } from "../chat/ChatInput";
 
 interface FloatingOverlayViewProps {
   aiState: AIState;
@@ -28,7 +23,6 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
   setAiState,
   messages,
   currentMessage,
-  recognizedText,
   setRecognizedText,
   onSendMessage,
   onClose,
@@ -36,9 +30,6 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
   onCollapse,
   onRetry,
 }) => {
-  const [inputText, setInputText] = useState("");
-  const [isTextInputActive, setIsTextInputActive] = useState(true);
-  const inputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevMsgLengthRef = useRef(messages.length);
 
@@ -65,17 +56,6 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
     }
   }, [onSendMessage]);
 
-  // 에이전트 입력창이 열리거나 답변 스트리밍이 완료되었을 때 입력창 자동 포커스 (모바일 가상 키보드 즉시 호출)
-  useEffect(() => {
-    if (aiState !== "closed" && !currentMessage?.isStreaming && aiState !== "thinking") {
-      setIsTextInputActive(true);
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [aiState, currentMessage?.isStreaming]);
-
   // 새 메시지가 추가되거나 질문 전송 시: 마지막 사용자 질문으로 instant 스크롤 고정
   useLayoutEffect(() => {
     if (messages.length > prevMsgLengthRef.current) {
@@ -96,80 +76,13 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
     prevMsgLengthRef.current = messages.length;
   }, [messages.length]);
 
-  // 음성 인식 시작 (지원 시)
-  const startSpeechRecognition = () => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      setIsTextInputActive(true);
-      setTimeout(() => inputRef.current?.focus(), 50);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "ko-KR";
-      recognition.interimResults = true;
-      recognition.continuous = false;
-
-      recognition.onstart = () => {
-        setAiState("listening");
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0].transcript)
-          .join("");
-
-        setRecognizedText(transcript);
-        if (event.results[0].isFinal) {
-          setAiState("recognized");
-          setTimeout(() => {
-            if (transcript.trim()) {
-              onSendMessage(transcript);
-            }
-          }, 300);
-        }
-      };
-
-      recognition.onerror = () => {
-        setIsTextInputActive(true);
-        setTimeout(() => inputRef.current?.focus(), 50);
-      };
-
-      recognition.onend = () => {
-        if (!recognizedText) {
-          setIsTextInputActive(true);
-          setTimeout(() => inputRef.current?.focus(), 50);
-        }
-      };
-
-      recognition.start();
-    } catch {
-      setIsTextInputActive(true);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  };
-
-
-  const handleTextSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
-    const text = inputText.trim();
-    setInputText("");
-    setIsTextInputActive(false);
-    setRecognizedText(text);
-    setAiState("answering");
-    onSendMessage(text);
-  };
-
   if (aiState === "closed") {
     return null;
   }
 
   const isExpanded = aiState === "expanded";
   const isAnsweringOrExpanded = aiState === "answering" || aiState === "expanded" || aiState === "thinking";
+  const isGenerating = Boolean(currentMessage?.isStreaming || aiState === "thinking");
 
   const dragStartYRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
@@ -207,37 +120,10 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
     }
   };
 
-  // 캡슐만 있는 상태에서 위로 끌어올리면 전체화면으로 전환하는 핸들러
-  const capsuleStartYRef = useRef<number>(0);
-  const isCapsuleDraggingRef = useRef<boolean>(false);
-
-  const handleCapsulePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    capsuleStartYRef.current = e.clientY;
-    isCapsuleDraggingRef.current = true;
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
-  };
-
-  const handleCapsulePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isCapsuleDraggingRef.current) return;
-    isCapsuleDraggingRef.current = false;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {}
-
-    const deltaY = e.clientY - capsuleStartYRef.current;
-    if (deltaY < -30) {
-      // 위로 끌어 올림 -> 전체화면 확장
-      onExpand();
-    } else if (deltaY > 35) {
-      // 아래로 끌어 내림 -> 닫기
-      onClose();
-    } else {
-      // 일반 클릭 / 탭 -> 입력창 포커스
-      setIsTextInputActive(true);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
+  const handleMessageSubmit = (text: string) => {
+    setRecognizedText(text);
+    setAiState("answering");
+    onSendMessage(text);
   };
 
   return (
@@ -275,8 +161,6 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
           className="absolute inset-0 z-0 pointer-events-auto"
         />
       )}
-
-
 
       {/* 2. Answering & Expanded 상태: Full 버전의 채팅 화면을 그대로 공용 활용 */}
       {isAnsweringOrExpanded && messages.length > 0 && (
@@ -330,87 +214,18 @@ export const FloatingOverlayView: React.FC<FloatingOverlayViewProps> = ({
         </div>
       )}
 
-      {/* 3. Floating Capsule (하단 도킹 순백색 알약 캡슐) */}
-      <div className="w-full max-w-xl mx-auto pointer-events-auto relative z-20">
-        <div
-          onPointerDown={handleCapsulePointerDown}
-          onPointerUp={handleCapsulePointerUp}
-          className="relative flex items-center justify-between px-4 py-2.5 rounded-full bg-white/95 border border-white/90 backdrop-blur-2xl shadow-[0_8px_28px_rgba(0,30,80,0.12)] text-slate-800 cursor-pointer transition-all duration-300 hover:shadow-[0_12px_36px_rgba(0,30,80,0.16)] active:scale-[0.99] touch-none"
-        >
-          {/* 좌측: 순수 챗불이 로고 + 상태 라벨 / 텍스트 입력창 */}
-          <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
-            <img
-              src={chatbotLogo}
-              alt="AI"
-              onClick={(e) => {
-                e.stopPropagation();
-                onExpand();
-              }}
-              className="w-6 h-6 object-contain shrink-0 cursor-pointer active:scale-90 transition-transform"
-              title="전체화면으로 확장"
-            />
-
-            {isTextInputActive ? (
-              <form onSubmit={handleTextSubmit} className="flex-1 flex items-center">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder="챗불이에게 물어보기"
-                  className="w-full bg-transparent border-none outline-none text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-semibold"
-                  autoFocus
-                />
-              </form>
-            ) : (
-              <div className="flex flex-col min-w-0">
-                <span className="text-[14px] font-semibold tracking-tight truncate text-slate-800">
-                  {aiState === "listening" && "챗불이에게 물어보기"}
-                  {aiState === "recognized" && (recognizedText || "인식 완료")}
-                  {aiState === "thinking" && "생각하는 중..."}
-                  {aiState === "answering" && (currentMessage?.isStreaming ? "답변 중..." : "챗불이에게 물어보기")}
-                  {aiState === "expanded" && (currentMessage?.isStreaming ? "답변 중..." : "챗불이에게 물어보기")}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* 우측: 전송 버튼 또는 정지 버튼 또는 마이크 아이콘 */}
-          <div className="flex items-center gap-2 shrink-0">
-            {isTextInputActive ? (
-              <button
-                onClick={handleTextSubmit}
-                disabled={!inputText.trim()}
-                className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center disabled:opacity-40 active:scale-95 transition-all shadow-sm"
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            ) : currentMessage?.isStreaming ? (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setAiState("listening");
-                }}
-                className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 active:scale-95"
-                title="중지"
-              >
-                <Square className="w-2.5 h-2.5 fill-current" />
-              </button>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startSpeechRecognition();
-                }}
-                className="p-1.5 rounded-full text-slate-500 hover:text-blue-600 active:scale-95 transition-all"
-                title="음성 입력"
-              >
-                <Mic className="w-4 h-4 text-blue-600" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* 3. 공용 ChatInput 컴포넌트 (플로팅 입력창) */}
+      <ChatInput
+        onSendMessage={handleMessageSubmit}
+        isLoading={isGenerating}
+        onStopGeneration={() => setAiState("listening")}
+        placeholder="챗불이에게 물어보기"
+        autoFocus={true}
+        onExpand={onExpand}
+        onClose={onClose}
+        onLogoClick={onExpand}
+        isFloating={true}
+      />
     </div>
   );
 };

@@ -266,6 +266,11 @@ export default function App() {
           isLoading={isLoading}
           onStopGeneration={stopGeneration}
           placeholder="챗불이에게 물어보기"
+          onLogoClick={
+            isFloatingMode
+              ? () => setAiState(aiState === "expanded" ? "answering" : "expanded")
+              : undefined
+          }
         />
       </main>
     </div>
