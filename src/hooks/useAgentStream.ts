@@ -65,6 +65,10 @@ export function useAgentStream() {
   const [recognizedText, setRecognizedText] = useState<string>("");
   const clientContextRef = useRef<Record<string, any> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const currentRoomIdRef = useRef(currentRoomId);
+  useEffect(() => {
+    currentRoomIdRef.current = currentRoomId;
+  }, [currentRoomId]);
 
   const notifyParentStateChange = useCallback((state: AIState, text?: string) => {
     if (typeof window !== "undefined" && window.parent && window.parent !== window) {
@@ -108,25 +112,36 @@ export function useAgentStream() {
   const currentRoom = rooms.find((r) => r.id === currentRoomId) || rooms[0];
 
   const createNewRoom = useCallback(() => {
-    // 요구사항 1: 이미 빈 대화방이 있으면 새로 만들지 않고 해당 방 선택
-    const existingEmptyRoom = rooms.find((r) => r.messages.length === 0);
-    if (existingEmptyRoom) {
-      setCurrentRoomId(existingEmptyRoom.id);
-      if (window.innerWidth <= 768) setIsSidebarOpen(false);
-      return;
-    }
+    setRooms((prev) => {
+      const activeId = currentRoomIdRef.current;
+      // 1. 현재 방이 이미 빈 대화방이라면 현재 방 유지
+      const current = prev.find((r) => r.id === activeId);
+      if (current && current.messages.length === 0) {
+        return prev;
+      }
 
-    const newId = generateUUID();
-    const newRoom: ChatRoom = {
-      id: newId,
-      title: "새로운 대화",
-      createdAt: Date.now(),
-      messages: [],
-    };
-    setRooms((prev) => [newRoom, ...prev]);
-    setCurrentRoomId(newId);
+      // 2. 다른 방 중 빈 대화방이 있다면 그 방으로 전환
+      const existingEmptyRoom = prev.find((r) => r.messages.length === 0);
+      if (existingEmptyRoom) {
+        setCurrentRoomId(existingEmptyRoom.id);
+        currentRoomIdRef.current = existingEmptyRoom.id;
+        return prev;
+      }
+
+      // 3. 메시지가 있는 방만 있다면 새로운 대화방 생성
+      const newId = generateUUID();
+      const newRoom: ChatRoom = {
+        id: newId,
+        title: "새로운 대화",
+        createdAt: Date.now(),
+        messages: [],
+      };
+      setCurrentRoomId(newId);
+      currentRoomIdRef.current = newId;
+      return [newRoom, ...prev];
+    });
     if (window.innerWidth <= 768) setIsSidebarOpen(false);
-  }, [rooms]);
+  }, []);
 
   const deleteRoom = useCallback((id: string) => {
     setRooms((prev) => {
@@ -256,15 +271,20 @@ export function useAgentStream() {
             createNewRoom();
             setRecognizedText("");
             setAiStateState("listening");
+            notifyParentStateChange("listening");
           } else if (payload.action === "RESUME") {
             // 게시물 조회 후 복귀 시: 대화방을 새로 만들지 않고 기존 대화 세션 그대로 복원
-            const activeRoom = rooms.find((r) => r.id === currentRoomId);
-            const targetState: AIState = payload.state || (activeRoom && activeRoom.messages.length > 0 ? "expanded" : "listening");
-            setAiStateState(targetState);
-            notifyParentStateChange(targetState);
+            setRooms((prev) => {
+              const activeRoom = prev.find((r) => r.id === currentRoomIdRef.current);
+              const targetState: AIState = payload.state || (activeRoom && activeRoom.messages.length > 0 ? "expanded" : "listening");
+              setAiStateState(targetState);
+              notifyParentStateChange(targetState);
+              return prev;
+            });
           } else if (payload.action === "FORCE_CLOSE") {
             setAiStateState("closed");
             setRecognizedText("");
+            createNewRoom();
           } else if (payload.action === "SET_EXPANDED") {
             setAiStateState("expanded");
             notifyParentStateChange("expanded");
