@@ -88,8 +88,9 @@ export function handleAppNavigation(url?: string) {
   if (url.startsWith("http://") || url.startsWith("https://")) {
     window.open(url, "_blank", "noopener,noreferrer");
   } else {
-    const portalBase = import.meta.env.VITE_PORTAL_WEB_URL || "https://intip-test.pages.dev";
-    window.open(`${portalBase}${url.startsWith("/") ? "" : "/"}${url}`, "_blank", "noopener,noreferrer");
+    const portalBase = (import.meta.env.VITE_PORTAL_WEB_URL || "https://intip.inuappcenter.kr").replace(/\/$/, "");
+    const targetPath = url.startsWith("/") ? url : `/${url}`;
+    window.open(`${portalBase}${targetPath}`, "_blank", "noopener,noreferrer");
   }
 }
 
