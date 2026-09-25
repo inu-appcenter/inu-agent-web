@@ -143,5 +143,6 @@ export interface ChildToHostMessage {
 
 export interface HostToChildMessage {
   type: 'HOST_COMMAND';
-  action: 'TRIGGER_OPEN' | 'FORCE_CLOSE' | 'SET_EXPANDED' | 'SET_HALF';
+  action: 'TRIGGER_OPEN' | 'FORCE_CLOSE' | 'SET_EXPANDED' | 'SET_HALF' | 'RESUME';
+  state?: AIState;
 }

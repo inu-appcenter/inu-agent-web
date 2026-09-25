@@ -256,9 +256,14 @@ export function useAgentStream() {
             createNewRoom();
             setRecognizedText("");
             setAiStateState("listening");
+          } else if (payload.action === "RESUME") {
+            // 게시물 조회 후 복귀 시: 대화방을 새로 만들지 않고 기존 대화 세션 그대로 복원
+            const activeRoom = rooms.find((r) => r.id === currentRoomId);
+            const targetState: AIState = payload.state || (activeRoom && activeRoom.messages.length > 0 ? "expanded" : "listening");
+            setAiStateState(targetState);
+            notifyParentStateChange(targetState);
           } else if (payload.action === "FORCE_CLOSE") {
             setAiStateState("closed");
-            createNewRoom();
             setRecognizedText("");
           } else if (payload.action === "SET_EXPANDED") {
             setAiStateState("expanded");
