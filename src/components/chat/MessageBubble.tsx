@@ -20,6 +20,7 @@ import {
 import { ChatMessage } from "../../types/agent";
 import { CardRenderer } from "../cards/CardRenderer";
 import LoadingAnimation from "../../assets/횃불이ai로딩애니메이션.gif";
+import { handleAppNavigation } from "../../utils/navigation";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -484,9 +485,11 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                         <a
                           {...props}
                           href={href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#0061ff] underline underline-offset-2 font-medium hover:text-blue-800 break-all"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleAppNavigation(href);
+                          }}
+                          className="text-[#0061ff] underline underline-offset-2 font-medium hover:text-blue-800 break-all cursor-pointer"
                         >
                           {linkContent}
                         </a>

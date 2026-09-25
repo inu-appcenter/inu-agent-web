@@ -45,30 +45,8 @@ export function handleAppNavigation(url?: string) {
     return;
   }
 
-  // 2. Mobile App React Native WebView Bridge
-  if ((window as any).ReactNativeWebView) {
-    (window as any).ReactNativeWebView.postMessage(
-      JSON.stringify({
-        type: "openUrl",
-        payload: { url },
-      })
-    );
-    (window as any).ReactNativeWebView.postMessage(
-      JSON.stringify({
-        type: "navigateTo",
-        payload: { path: url, url },
-      })
-    );
-    (window as any).ReactNativeWebView.postMessage(
-      JSON.stringify({
-        type: "NAVIGATE",
-        url,
-      })
-    );
-    return;
-  }
-
-  // 3. Embedded in Portal Web iframe (postMessage to parent window)
+  // 2. Embedded in Portal Web iframe (postMessage to parent window)
+  // 인팁 앱/웹의 iframe 안에서 렌더링될 때는 부모 윈도우로 INTIP_NAVIGATE를 전달하여 부모 라우터가 페이지 이동을 수행
   if (window.parent && window.parent !== window) {
     window.parent.postMessage(
       {
@@ -76,6 +54,32 @@ export function handleAppNavigation(url?: string) {
         url,
       },
       "*"
+    );
+    return;
+  }
+
+  // 3. Standalone Mobile App React Native WebView Bridge (단독 웹뷰 환경)
+  if ((window as any).ReactNativeWebView) {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      (window as any).ReactNativeWebView.postMessage(
+        JSON.stringify({
+          type: "openUrl",
+          payload: { url },
+        })
+      );
+    } else {
+      (window as any).ReactNativeWebView.postMessage(
+        JSON.stringify({
+          type: "navigateTo",
+          payload: { path: url, url },
+        })
+      );
+    }
+    (window as any).ReactNativeWebView.postMessage(
+      JSON.stringify({
+        type: "NAVIGATE",
+        url,
+      })
     );
     return;
   }
