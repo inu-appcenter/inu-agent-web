@@ -399,7 +399,7 @@ export function useAgentStream() {
       ) {
         window.parent.postMessage({ type: "GET_CLIENT_CONTEXT" }, "*");
         await new Promise<void>((resolve) => {
-          const timeout = setTimeout(() => resolve(), 15000);
+          const timeout = setTimeout(() => resolve(), 1500);
           const checker = setInterval(() => {
             if (
               clientContextRef.current?.academic ||
@@ -411,7 +411,7 @@ export function useAgentStream() {
               clearInterval(checker);
               resolve();
             }
-          }, 100);
+          }, 80);
         });
       }
 
@@ -532,17 +532,24 @@ export function useAgentStream() {
                       messages: r.messages.map((msg) => {
                         if (msg.id !== assistantMsgId) return msg;
                         const prevThinking = msg.thinking || "";
-                        const newThinking = prevThinking
-                          ? `${prevThinking}\n${event.thinking}`
-                          : event.thinking;
+                        const newThinking = prevThinking + event.thinking;
 
-                        // 통합 타임라인에 생각 항목 추가 (이전 항목과 중복 방지)
+                        // 통합 타임라인에 생각 항목 실시간 스트리밍 누적
                         const currentTimeline = msg.timeline || [];
-                        const isDuplicate = currentTimeline.some(
-                          (item) => item.type === "thinking" && item.text === event.thinking
-                        );
                         let updatedTimeline = currentTimeline;
-                        if (!isDuplicate) {
+
+                        const lastIdx = currentTimeline.length - 1;
+                        if (lastIdx >= 0 && currentTimeline[lastIdx].type === "thinking") {
+                          // 마지막 항목이 thinking이면 실시간으로 텍스트 추가
+                          updatedTimeline = [
+                            ...currentTimeline.slice(0, lastIdx),
+                            {
+                              ...currentTimeline[lastIdx],
+                              text: currentTimeline[lastIdx].text + event.thinking,
+                            },
+                          ];
+                        } else {
+                          // 새로운 생각 블록 생성
                           updatedTimeline = [
                             ...currentTimeline,
                             {
