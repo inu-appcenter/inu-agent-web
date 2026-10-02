@@ -66,6 +66,10 @@ export function useAgentStream() {
   const clientContextRef = useRef<Record<string, any> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentRoomIdRef = useRef(currentRoomId);
+  const lastUserMessageRef = useRef<string>("");
+  const lastAssistantMsgIdRef = useRef<string>("");
+  const hasPendingActionRef = useRef<boolean>(false);
+  const pendingActionTimerRef = useRef<any>(null);
   useEffect(() => {
     currentRoomIdRef.current = currentRoomId;
   }, [currentRoomId]);
@@ -224,32 +228,195 @@ export function useAgentStream() {
         if (!actionResult) return;
         console.log("[INU-Agent-Web] Received native action result:", actionResult);
 
-        // Report action result back to inu-agent-core to synthesize SDUI card
-        const reportResp = await fetch(`${CORE_URL}/api/v1/action/report`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(actionResult),
-        });
+        if (pendingActionTimerRef.current) {
+          clearTimeout(pendingActionTimerRef.current);
+          pendingActionTimerRef.current = null;
+        }
 
-        if (reportResp.ok) {
-          const reportData = await reportResp.json();
-          if (reportData.card) {
-            setRooms((prev) =>
-              prev.map((r) => {
-                if (r.id !== currentRoomId) return r;
-                const updatedMsgs = [...r.messages];
-                const lastIdx = updatedMsgs.length - 1;
-                if (lastIdx >= 0 && updatedMsgs[lastIdx].role === "assistant") {
-                  const currentCards = updatedMsgs[lastIdx].cards || [];
-                  updatedMsgs[lastIdx] = {
-                    ...updatedMsgs[lastIdx],
-                    cards: [...currentCards, reportData.card],
-                  };
-                }
-                return { ...r, messages: updatedMsgs };
-              })
-            );
+        const targetMsgId = lastAssistantMsgIdRef.current;
+        const targetRoomId = currentRoomIdRef.current;
+
+        // 1. Resume Stream via POST /api/v1/chat/action-callback
+        try {
+          const callbackResponse = await fetch(`${CORE_URL}/api/v1/chat/action-callback`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-AppCenter-Client": clientTenant,
+            },
+            body: JSON.stringify({
+              action_id: actionResult.action_id,
+              session_id: targetRoomId,
+              success: actionResult.success,
+              data: actionResult.data,
+              error_code: actionResult.error_code,
+              error_message: actionResult.error_message,
+              original_message: lastUserMessageRef.current,
+              client: clientTenant,
+              client_context: clientContextRef.current || undefined,
+            }),
+          });
+
+          if (!callbackResponse.ok || !callbackResponse.body) {
+            throw new Error(`Action callback failed with status ${callbackResponse.status}`);
           }
+
+          const reader = callbackResponse.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let cbBuffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            cbBuffer += decoder.decode(value, { stream: true });
+            const lines = cbBuffer.split("\n");
+            cbBuffer = lines.pop() || "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed || !trimmed.startsWith("data: ")) continue;
+              const jsonStr = trimmed.slice(6);
+              if (jsonStr === "[DONE]") continue;
+
+              try {
+                const event = JSON.parse(jsonStr);
+
+                if (event.event_type === "STATUS") {
+                  const statusItem = {
+                    id: event.status_id || `tool_${Date.now()}`,
+                    category: event.status_category || "SYSTEM",
+                    title: event.status_title || "작업 처리 중...",
+                    state: event.status_state || "running",
+                  };
+                  setRooms((prev) =>
+                    prev.map((r) => {
+                      if (r.id !== targetRoomId) return r;
+                      return {
+                        ...r,
+                        messages: r.messages.map((msg) => {
+                          if (msg.id !== targetMsgId) return msg;
+                          const currentTools = msg.toolStatuses || [];
+                          const existingIdx = currentTools.findIndex((t) => t.id === statusItem.id);
+                          const updatedTools = existingIdx >= 0
+                            ? [...currentTools.slice(0, existingIdx), statusItem, ...currentTools.slice(existingIdx + 1)]
+                            : [...currentTools, statusItem];
+
+                          const currentTimeline = msg.timeline || [];
+                          const timelineIdx = currentTimeline.findIndex((t) => t.id === statusItem.id);
+                          const updatedTimeline = timelineIdx >= 0
+                            ? [
+                                ...currentTimeline.slice(0, timelineIdx),
+                                {
+                                  ...currentTimeline[timelineIdx],
+                                  text: statusItem.title,
+                                  category: statusItem.category,
+                                  state: statusItem.state,
+                                },
+                                ...currentTimeline.slice(timelineIdx + 1),
+                              ]
+                            : [
+                                ...currentTimeline,
+                                {
+                                  id: statusItem.id,
+                                  type: "tool" as const,
+                                  text: statusItem.title,
+                                  category: statusItem.category,
+                                  state: statusItem.state,
+                                  timestamp: Date.now(),
+                                },
+                              ];
+
+                          return {
+                            ...msg,
+                            toolStatuses: updatedTools,
+                            timeline: updatedTimeline,
+                          };
+                        }),
+                      };
+                    })
+                  );
+                } else if (event.event_type === "CARD" && event.card) {
+                  setRooms((prev) =>
+                    prev.map((r) => {
+                      if (r.id !== targetRoomId) return r;
+                      return {
+                        ...r,
+                        messages: r.messages.map((msg) =>
+                          msg.id === targetMsgId
+                            ? { ...msg, cards: [...(msg.cards || []), event.card] }
+                            : msg
+                        ),
+                      };
+                    })
+                  );
+                } else if (event.event_type === "TOKEN" && event.content) {
+                  setRooms((prev) =>
+                    prev.map((r) => {
+                      if (r.id !== targetRoomId) return r;
+                      return {
+                        ...r,
+                        messages: r.messages.map((msg) =>
+                          msg.id === targetMsgId
+                            ? { ...msg, content: msg.content + event.content }
+                            : msg
+                        ),
+                      };
+                    })
+                  );
+                } else if (event.event_type === "DONE") {
+                  hasPendingActionRef.current = false;
+                  setIsLoading(false);
+                  setRooms((prev) =>
+                    prev.map((r) => {
+                      if (r.id !== targetRoomId) return r;
+                      return {
+                        ...r,
+                        messages: r.messages.map((msg) =>
+                          msg.id === targetMsgId ? { ...msg, isStreaming: false } : msg
+                        ),
+                      };
+                    })
+                  );
+                }
+              } catch (parseErr) {
+                console.warn("[INU-Agent-Web] Action callback JSON parse error:", parseErr);
+              }
+            }
+          }
+        } catch (streamErr) {
+          console.warn("[INU-Agent-Web] Action callback stream failed, falling back to /api/v1/action/report:", streamErr);
+          // Fallback to /api/v1/action/report
+          try {
+            const reportResp = await fetch(`${CORE_URL}/api/v1/action/report`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(actionResult),
+            });
+            if (reportResp.ok) {
+              const reportData = await reportResp.json();
+              if (reportData.card) {
+                setRooms((prev) =>
+                  prev.map((r) => {
+                    if (r.id !== targetRoomId) return r;
+                    return {
+                      ...r,
+                      messages: r.messages.map((msg) =>
+                        msg.id === targetMsgId
+                          ? { ...msg, cards: [...(msg.cards || []), reportData.card], isStreaming: false }
+                          : msg
+                      ),
+                    };
+                  })
+                );
+              }
+            }
+          } catch (fbErr) {
+            console.warn("[INU-Agent-Web] Fallback report error:", fbErr);
+          }
+        } finally {
+          hasPendingActionRef.current = false;
+          setIsLoading(false);
         }
       } catch (err) {
         console.warn("[INU-Agent-Web] Error handling native action result:", err);
@@ -386,34 +553,9 @@ export function useAgentStream() {
         headers["Authorization"] = authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`;
       }
 
-      // 학적/성적/과제/지도교수 등 개인화 정보가 필요한 질의의 경우, 부모 웹뷰의 실시간 Client Context(히든 웹뷰 스크래핑 결과) 도착을 대기
-      const isPersonalizedQuery = /학적|학점|졸업|취득|성적|과제|이러닝|수강|전공|입학|복학|휴학|평점|교수|담임|지도교수|과사|연구실/i.test(text);
-      if (
-        isPersonalizedQuery &&
-        typeof window !== "undefined" &&
-        window.parent &&
-        window.parent !== window &&
-        !clientContextRef.current?.academic &&
-        !clientContextRef.current?.academicDisplay &&
-        clientContextRef.current?.portal?.linked !== false
-      ) {
-        window.parent.postMessage({ type: "GET_CLIENT_CONTEXT" }, "*");
-        await new Promise<void>((resolve) => {
-          const timeout = setTimeout(() => resolve(), 1500);
-          const checker = setInterval(() => {
-            if (
-              clientContextRef.current?.academic ||
-              clientContextRef.current?.academicDisplay ||
-              clientContextRef.current?.portal?.linked === false ||
-              clientContextRef.current?.portal?.academicErrorCode
-            ) {
-              clearTimeout(timeout);
-              clearInterval(checker);
-              resolve();
-            }
-          }, 80);
-        });
-      }
+      lastUserMessageRef.current = text;
+      lastAssistantMsgIdRef.current = assistantMsgId;
+      hasPendingActionRef.current = false;
 
       try {
         const response = await fetch(`${CORE_URL}/api/v1/chat/stream`, {
@@ -421,6 +563,7 @@ export function useAgentStream() {
           headers,
           body: JSON.stringify({
             message: text,
+            session_id: currentRoomId,
             client: clientTenant,
             client_context: clientContextRef.current || undefined,
             history: currentRoom.messages.slice(-6).map((m) => ({
@@ -601,6 +744,44 @@ export function useAgentStream() {
               } else if (event.event_type === "ACTION_REQUIRED" && event.action) {
                 const action: ClientActionInstruction = event.action;
                 console.log("[INU-Agent-Web] Action required:", action);
+                hasPendingActionRef.current = true;
+
+                // Indicate ongoing secure on-device fetch in tool status and timeline
+                const actionStatus = {
+                  id: `action_${action.action_id}`,
+                  category: action.auth_domain || "PORTAL",
+                  title: "기기 보안 영역에서 안전하게 학교 시스템 데이터를 확인 중입니다...",
+                  state: "running" as const,
+                };
+
+                setRooms((prev) =>
+                  prev.map((r) => {
+                    if (r.id !== currentRoomId) return r;
+                    return {
+                      ...r,
+                      messages: r.messages.map((msg) => {
+                        if (msg.id !== assistantMsgId) return msg;
+                        const currentTools = msg.toolStatuses || [];
+                        const currentTimeline = msg.timeline || [];
+                        return {
+                          ...msg,
+                          toolStatuses: [...currentTools, actionStatus],
+                          timeline: [
+                            ...currentTimeline,
+                            {
+                              id: actionStatus.id,
+                              type: "tool" as const,
+                              text: actionStatus.title,
+                              category: actionStatus.category,
+                              state: "running",
+                              timestamp: Date.now(),
+                            },
+                          ],
+                        };
+                      }),
+                    };
+                  })
+                );
 
                 // Forward to React Native Mobile WebView if available
                 if ((window as any).ReactNativeWebView) {
@@ -609,6 +790,7 @@ export function useAgentStream() {
                       type: "executeAgentAction",
                       payload: { instruction: action },
                       requestId: action.action_id,
+                      sessionId: currentRoomId,
                     })
                   );
                 } else if (typeof window !== "undefined" && window.parent && window.parent !== window) {
@@ -618,11 +800,12 @@ export function useAgentStream() {
                       type: "EXECUTE_AGENT_ACTION",
                       instruction: action,
                       requestId: action.action_id,
+                      sessionId: currentRoomId,
                     },
                     "*"
                   );
                 } else {
-                  // Fallback card for standalone web browser
+                  // Fallback card for standalone web browser without device bridge
                   const domainLabel =
                     action.auth_domain === "LMS"
                       ? "이러닝(LMS)"
@@ -676,18 +859,41 @@ export function useAgentStream() {
                     })
                   );
                 }
+
+                // Safety timeout guard (8s) if device bridge doesn't respond
+                if (pendingActionTimerRef.current) clearTimeout(pendingActionTimerRef.current);
+                pendingActionTimerRef.current = setTimeout(() => {
+                  if (hasPendingActionRef.current) {
+                    hasPendingActionRef.current = false;
+                    setIsLoading(false);
+                    setRooms((prev) =>
+                      prev.map((r) => {
+                        if (r.id !== currentRoomId) return r;
+                        return {
+                          ...r,
+                          messages: r.messages.map((msg) =>
+                            msg.id === assistantMsgId ? { ...msg, isStreaming: false } : msg
+                          ),
+                        };
+                      })
+                    );
+                  }
+                }, 8000);
               } else if (event.event_type === "DONE") {
-                setRooms((prev) =>
-                  prev.map((r) => {
-                    if (r.id !== currentRoomId) return r;
-                    return {
-                      ...r,
-                      messages: r.messages.map((msg) =>
-                        msg.id === assistantMsgId ? { ...msg, isStreaming: false } : msg
-                      ),
-                    };
-                  })
-                );
+                if (!hasPendingActionRef.current) {
+                  setIsLoading(false);
+                  setRooms((prev) =>
+                    prev.map((r) => {
+                      if (r.id !== currentRoomId) return r;
+                      return {
+                        ...r,
+                        messages: r.messages.map((msg) =>
+                          msg.id === assistantMsgId ? { ...msg, isStreaming: false } : msg
+                        ),
+                      };
+                    })
+                  );
+                }
               }
             } catch (err) {
               console.warn("Failed to parse SSE JSON:", jsonStr, err);
