@@ -78,6 +78,7 @@ export interface ClientActionRequest {
 
 export interface ClientActionInstruction {
   action_id: string;
+  session_id?: string;
   auth_domain: "LIBRARY" | "PORTAL" | "LMS" | "NONE";
   protocol: "HTTP_REST" | "NEXACRO_SSV";
   request: ClientActionRequest;
@@ -86,6 +87,7 @@ export interface ClientActionInstruction {
 
 export interface ClientActionResult {
   action_id: string;
+  session_id?: string;
   success: boolean;
   status_code?: number;
   data?: any;
