@@ -5,6 +5,8 @@ import remarkBreaks from "remark-breaks";
 import {
   Copy,
   Check,
+  AlertCircle,
+  Minus,
   Sparkles,
   GraduationCap,
   BookOpen,
@@ -222,6 +224,48 @@ const getToolIcon = (category: string) => {
   }
 };
 
+/**
+ * 3단계 시스템 상태(확인 완료, 결과 없음, 조회 실패)에 맞춘 뱃지 아이콘 렌더링
+ */
+const renderStatusBadge = (state?: string, text?: string) => {
+  if (state === "running") {
+    return (
+      <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
+    );
+  }
+  const isFailed = state === "failed" || text?.includes("실패") || text?.includes("오류");
+  if (isFailed) {
+    return (
+      <AlertCircle
+        size={12}
+        className="text-rose-500 stroke-[2.5] flex-shrink-0"
+      />
+    );
+  }
+  const isEmpty = text?.includes("결과 없음");
+  if (isEmpty) {
+    return (
+      <Minus
+        size={12}
+        className="text-slate-400 stroke-[2.5] flex-shrink-0"
+      />
+    );
+  }
+  return (
+    <Check
+      size={12}
+      className="text-emerald-600 stroke-[2.5] flex-shrink-0"
+    />
+  );
+};
+
+const getStatusTextColor = (state?: string, text?: string) => {
+  if (state === "running") return "text-slate-700";
+  if (state === "failed" || text?.includes("실패") || text?.includes("오류")) return "text-rose-600";
+  if (text?.includes("결과 없음")) return "text-slate-500";
+  return "text-slate-700";
+};
+
 const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   message,
   onChipClick,
@@ -311,7 +355,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                       return (
                         <div
                           key={item.id}
-                          className="flex items-center gap-2 text-xs text-slate-700 animate-fade-in py-0.5"
+                          className={`flex items-center gap-2 text-xs ${getStatusTextColor(item.state, item.text)} animate-fade-in py-0.5`}
                         >
                           <div className="w-5 h-5 rounded-md bg-white border border-slate-200/90 flex items-center justify-center flex-shrink-0 shadow-2xs">
                             {getToolIcon(item.category || "SYSTEM")}
@@ -319,14 +363,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                           <span className="font-medium tracking-tight truncate">
                             {item.text}
                           </span>
-                          {item.state === "running" ? (
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
-                          ) : (
-                            <Check
-                              size={12}
-                              className="text-emerald-600 stroke-[2.5] flex-shrink-0"
-                            />
-                          )}
+                          {renderStatusBadge(item.state, item.text)}
                         </div>
                       );
                     })
@@ -336,7 +373,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                       {message.toolStatuses?.map((tool) => (
                         <div
                           key={tool.id}
-                          className="flex items-center gap-2 text-xs text-slate-700 animate-fade-in py-0.5"
+                          className={`flex items-center gap-2 text-xs ${getStatusTextColor(tool.state, tool.title)} animate-fade-in py-0.5`}
                         >
                           <div className="w-5 h-5 rounded-md bg-white border border-slate-200/90 flex items-center justify-center flex-shrink-0 shadow-2xs">
                             {getToolIcon(tool.category)}
@@ -344,14 +381,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                           <span className="font-medium tracking-tight truncate">
                             {tool.title}
                           </span>
-                          {tool.state === "running" ? (
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
-                          ) : (
-                            <Check
-                              size={12}
-                              className="text-emerald-600 stroke-[2.5] flex-shrink-0"
-                            />
-                          )}
+                          {renderStatusBadge(tool.state, tool.title)}
                         </div>
                       ))}
                       {message.thinking && (
