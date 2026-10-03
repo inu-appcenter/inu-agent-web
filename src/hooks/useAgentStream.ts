@@ -209,6 +209,17 @@ export function useAgentStream() {
           return;
         }
 
+        // Parent window (inu-portal-web) updating token
+        if (rawPayload.type === "INTIP_TOKEN_UPDATED" && (rawPayload.token || rawPayload.accessToken)) {
+          const freshToken = rawPayload.token || rawPayload.accessToken;
+          console.log("[INU-Agent-Web] Received token update from parent:", freshToken);
+          if (clientContextRef.current) {
+            clientContextRef.current.accessToken = freshToken;
+            clientContextRef.current.auth = freshToken;
+          }
+          return;
+        }
+
         let actionResult: ClientActionResult | null = null;
 
         if (rawPayload.type === "executeAgentActionResult" || rawPayload.type === "AGENT_ACTION_RESULT") {
@@ -539,6 +550,8 @@ export function useAgentStream() {
       abortControllerRef.current = controller;
 
       const authToken =
+        clientContextRef.current?.accessToken ||
+        clientContextRef.current?.auth ||
         localStorage.getItem("accessToken") ||
         localStorage.getItem("token") ||
         sessionStorage.getItem("accessToken") ||
@@ -551,6 +564,7 @@ export function useAgentStream() {
       };
       if (authToken) {
         headers["Authorization"] = authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`;
+        headers["Auth"] = authToken.startsWith("Bearer ") ? authToken.replace("Bearer ", "").trim() : authToken.trim();
       }
 
       lastUserMessageRef.current = text;
