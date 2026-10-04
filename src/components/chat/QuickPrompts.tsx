@@ -390,7 +390,11 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
         {/* 내부 스크롤 영역: 작업 예시 카드들 */}
         <div
           ref={scrollContainerRef}
-          className="overflow-y-auto custom-scrollbar pt-2 pb-36 pr-1 space-y-2.5 max-h-[65vh] md:max-h-[72vh]"
+          style={{
+            paddingBottom:
+              "calc(140px + var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))",
+          }}
+          className="overflow-y-auto custom-scrollbar pt-2 pb-40 md:pb-48 pr-1 space-y-2.5 max-h-[65vh] md:max-h-[72vh]"
         >
           <div className="flex items-center justify-between px-1 mb-1">
             <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
@@ -432,6 +436,9 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
               💡 위 예시 외에도 해당 도메인과 관련된 구체적인 내용을 아래 입력창에 직접 질문하셔도 됩니다.
             </p>
           </div>
+
+          {/* 플로팅 입력바 가림 방지 하단 여백 스페이서 */}
+          <div className="h-8 shrink-0 pointer-events-none" />
         </div>
       </div>
     );
@@ -470,7 +477,13 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
 
   // 3. 별도 페이지: 챗불이가 할 수 있는 일들(8대 도메인) 목록 화면
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col justify-start pt-1 md:pt-2 pb-8 px-2 animate-in fade-in duration-200">
+    <div
+      style={{
+        paddingBottom:
+          "calc(140px + var(--native-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))",
+      }}
+      className="w-full max-w-2xl mx-auto flex flex-col justify-start pt-1 md:pt-2 pb-36 md:pb-44 px-2 animate-in fade-in duration-200"
+    >
       {/* 상단 네비게이션: 메인으로 가기 뒤로가기 버튼 + 지원 뱃지 */}
       <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-200/60 shrink-0">
         <button
@@ -528,6 +541,9 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
           </button>
         ))}
       </div>
+
+      {/* 플로팅 입력바 가림 방지 하단 여백 스페이서 */}
+      <div className="h-8 shrink-0 pointer-events-none" />
     </div>
   );
 };
