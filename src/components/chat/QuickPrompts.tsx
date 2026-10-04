@@ -13,6 +13,7 @@ import {
   Sparkles,
   Send,
 } from "lucide-react";
+import chatbotLogo from "../../assets/chatbot-logo.svg";
 
 interface Props {
   onSelect: (prompt: string) => void;
@@ -41,7 +42,10 @@ interface DomainCategory {
   tasks: TaskExample[];
 }
 
-export const QuickPrompts: React.FC<Props> = ({ onSelect, isScrolled = false }) => {
+type ViewState = "main" | "guide";
+
+export const QuickPrompts: React.FC<Props> = ({ onSelect }) => {
+  const [viewState, setViewState] = useState<ViewState>("main");
   const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -349,21 +353,21 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect, isScrolled = false }) 
 
   const currentDomain = domains.find((d) => d.id === selectedDomainId);
 
-  // 1. 도메인 상세 작업 예시 목록 화면 (상단 헤더 고정 + 내부만 독립 스크롤 레이아웃)
+  // 1. 도메인 상세 작업 예시 목록 화면 (상단 헤더 고정 + 내부 독립 스크롤 레이아웃)
   if (currentDomain) {
     return (
       <div
         key={`domain-detail-${selectedDomainId}`}
         className="w-full max-w-2xl mx-auto flex flex-col text-left animate-in fade-in duration-200"
       >
-        {/* 상단 고정 헤더: 스크롤해도 끌려내려오지 않고 상단에 유지 */}
+        {/* 상단 헤더: 뒤로가기 버튼(할 수 있는 일들 목록으로) 및 도메인 정보 */}
         <div className="flex-shrink-0 pt-1 pb-2.5">
           <div className="flex items-center gap-2.5 mb-2">
             <button
               onClick={() => setSelectedDomainId(null)}
               className="w-8 h-8 flex items-center justify-center rounded-full text-slate-700 hover:text-blue-600 hover:bg-white bg-slate-100/90 border border-slate-200/80 transition-all shadow-2xs hover:shadow-xs cursor-pointer shrink-0"
               aria-label="뒤로가기"
-              title="뒤로가기"
+              title="할 수 있는 일들 목록으로"
             >
               <ChevronLeft className="w-4 h-4 -translate-x-0.5" />
             </button>
@@ -383,7 +387,7 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect, isScrolled = false }) 
           </p>
         </div>
 
-        {/* 내부 스크롤 영역: 작업 예시 카드들만 독립적으로 스크롤 (모바일 입력창 겹침 방지 여백 확보) */}
+        {/* 내부 스크롤 영역: 작업 예시 카드들 */}
         <div
           ref={scrollContainerRef}
           className="overflow-y-auto custom-scrollbar pt-2 pb-36 pr-1 space-y-2.5 max-h-[65vh] md:max-h-[72vh]"
@@ -433,22 +437,64 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect, isScrolled = false }) 
     );
   }
 
-  // 2. 초기 메인 도메인 카드 그리드 화면
-  return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col justify-start md:justify-center py-1 md:py-2 px-2 text-center animate-in fade-in duration-200">
-      {/* 챗불이 환영 인사: 중앙 상단에 위치하며 스크롤 시 자연스럽게 Fade out, 최상단 복귀 시 Fade in */}
-      <div
-        className={`sticky top-0 z-20 shrink-0 pt-2 md:pt-4 pb-3 md:pb-4 transition-all duration-300 ease-out ${
-          isScrolled
-            ? "opacity-0 -translate-y-2 pointer-events-none"
-            : "opacity-100 translate-y-0 pointer-events-auto"
-        }`}
-      >
-        <h2 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight flex items-center justify-center gap-2">
-          <span>안녕하세요! 저는 챗불이 에이전트예요</span>
+  // 2. 메인 화면: "안녕하세요! 저는 챗불이 에이전트에요." 문구와 "자세히 알아보기" Fill 버튼만 표시
+  if (viewState === "main") {
+    return (
+      <div className="w-full max-w-md mx-auto my-auto flex flex-col items-center justify-center text-center py-10 px-4 select-none animate-in fade-in duration-300">
+        {/* 챗불이 마스코트 로고 */}
+        <div className="w-16 h-16 sm:w-20 sm:h-20 mb-5 rounded-3xl bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-[0_4px_20px_rgba(0,30,80,0.08)] flex items-center justify-center p-3.5 transition-transform hover:scale-105 pointer-events-none">
+          <img
+            src={chatbotLogo}
+            alt="챗불이 로고"
+            className="w-full h-full object-contain"
+          />
+        </div>
+
+        {/* 메인 인사말 */}
+        <h2 className="text-xl sm:text-2xl md:text-[26px] font-bold text-slate-800 tracking-tight text-center">
+          안녕하세요! 저는 챗불이 에이전트에요.
         </h2>
-        <p className="text-xs md:text-sm text-slate-500 mt-1.5 max-w-md mx-auto leading-relaxed">
-          궁금한 캠퍼스 도메인을 선택하면 에이전트가 실제로 수행할 수 있는 다양한 구체적 작업들을 확인하실 수 있어요.
+
+        {/* 자세히 알아보기 Fill 버튼 */}
+        <button
+          type="button"
+          onClick={() => setViewState("guide")}
+          className="mt-6 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold rounded-full shadow-[0_4px_14px_rgba(37,99,235,0.28)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.36)] transition-all flex items-center gap-2 cursor-pointer"
+        >
+          <span>자세히 알아보기</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
+  // 3. 별도 페이지: 챗불이가 할 수 있는 일들(8대 도메인) 목록 화면
+  return (
+    <div className="w-full max-w-2xl mx-auto flex flex-col justify-start pt-1 md:pt-2 pb-8 px-2 animate-in fade-in duration-200">
+      {/* 상단 네비게이션: 메인으로 가기 뒤로가기 버튼 + 지원 뱃지 */}
+      <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-200/60 shrink-0">
+        <button
+          onClick={() => setViewState("main")}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 bg-white/90 hover:bg-white border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+          title="메인 화면으로 돌아가기"
+        >
+          <ChevronLeft className="w-4 h-4 -translate-x-0.5" />
+          <span>메인으로</span>
+        </button>
+
+        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+          8개 캠퍼스 도메인
+        </span>
+      </div>
+
+      {/* 가이드 타이틀 & 설명 */}
+      <div className="mb-4 text-left shrink-0">
+        <h2 className="text-lg md:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-blue-600" />
+          <span>챗불이가 할 수 있는 일</span>
+        </h2>
+        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+          궁금한 캠퍼스 도메인을 선택하면 에이전트가 수행할 수 있는 다양한 구체적 작업들을 확인하실 수 있어요.
         </p>
       </div>
 
@@ -485,3 +531,5 @@ export const QuickPrompts: React.FC<Props> = ({ onSelect, isScrolled = false }) 
     </div>
   );
 };
+
+export const GuideScreen = QuickPrompts;

@@ -219,8 +219,9 @@ export default function App() {
           className="flex-1 w-full px-4 md:px-8 pt-2 md:pt-3 flex flex-col items-center z-10 overscroll-contain select-text custom-scrollbar overflow-y-auto"
         >
           {currentRoom.messages.length === 0 ? (
-            <div className="w-full max-w-3xl flex flex-col items-center pt-1 pb-4 min-h-0">
+            <div className="w-full max-w-3xl flex-1 flex flex-col items-center pt-1 pb-4 min-h-0">
               <QuickPrompts
+                key={currentRoomId}
                 onSelect={(prompt) => sendMessage(prompt)}
                 isScrolled={isPromptScrolled}
               />
