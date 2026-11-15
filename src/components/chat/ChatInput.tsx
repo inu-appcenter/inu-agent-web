@@ -191,6 +191,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </button>
         </form>
       </div>
+
+      {/* 채팅 내용은 AI 서버로 전송되므로, 민감한 정보를 넣지 않도록 미리 알린다.
+          플로팅 모드는 자리가 좁아 입력 중일 때만 보여 준다. */}
+      {(!isFloating || isFocused) && (
+        <p className="m-0 mt-1.5 px-2 text-center text-[11px] leading-snug text-slate-400 select-none">
+          비밀번호, 주민등록번호 같은 민감한 정보는 입력하지 마세요.
+        </p>
+      )}
     </div>
   );
 };
